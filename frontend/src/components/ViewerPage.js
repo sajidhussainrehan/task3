@@ -95,9 +95,9 @@ function ViewerPage({ token }) {
             <div className="text-xl font-bold text-blue-600">{supervisors.length}</div>
             <div className="text-xs text-gray-500">مجموعة</div>
           </div>
-          <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-purple-100">
+          <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-lime-100">
             <p className="text-2xl">💎</p>
-            <div className="text-xl font-bold text-purple-600">{students.reduce((a, s) => a + s.points, 0)}</div>
+            <div className="text-xl font-bold text-lime-600">{students.reduce((a, s) => a + s.points, 0)}</div>
             <div className="text-xs text-gray-500">نقطة</div>
           </div>
         </div>
@@ -198,8 +198,8 @@ function ViewerPage({ token }) {
 
         {/* Weekly Tasks */}
         {pendingTasks.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-purple-100">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-3">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-green-100">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-3 border-b-2 border-black">
               <h2 className="font-bold text-center text-sm">📋 المهام الأسبوعية</h2>
             </div>
             <div className="p-3 space-y-3">
@@ -213,7 +213,7 @@ function ViewerPage({ token }) {
                       <div key={task.id} className={`p-3 rounded-xl mb-2 border ${task.claimed_by ? "border-yellow-300 bg-yellow-50" : "border-blue-200 bg-blue-50"}`}>
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-gray-800 text-sm">{task.claimed_by ? "🔒" : "📌"} {task.description}</span>
-                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">💎 {task.points}</span>
+                          <span className="bg-lime-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold border border-green-300">💎 {task.points}</span>
                         </div>
                         {task.claimed_by_name && <p className="text-xs text-yellow-600 mt-1">👤 حجزها: {task.claimed_by_name}</p>}
                       </div>

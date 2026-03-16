@@ -238,8 +238,8 @@ function StudentProfileContent({ setRenderError }) {
 
         {/* 3. Challenges */}
         {availableChallenges.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-purple-100">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-lime-100">
+            <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black p-3 border-b-2 border-black">
               <h3 className="font-bold text-center text-sm">🏆 المنافسات المتاحة</h3>
             </div>
             <div className="p-4 space-y-4">
@@ -269,7 +269,7 @@ function StudentProfileContent({ setRenderError }) {
                     task.claimed_by === studentId ? "🔒" : "📌"
                   } {task.description}</p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">💎 {task.points} نقطة</span>
+                    <span className="bg-lime-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold border border-green-300">💎 {task.points} نقطة</span>
                     {task.status === "awaiting_approval" && task.claimed_by === studentId ? (
                       <span className="text-orange-600 text-xs font-bold">⏳ بانتظار موافقة المشرف</span>
                     ) : task.status === "completed" && task.claimed_by === studentId ? (
@@ -340,7 +340,7 @@ function ChallengeCard({ challenge, onAnswer }) {
       <div className="space-y-2">
         {challenge.options.map((opt, i) => (
           <button key={i} onClick={() => !answered && setSelected(i)}
-            className={`w-full text-right p-2 rounded-lg text-sm border transition ${selected === i ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:bg-gray-50"} ${answered ? "opacity-75 cursor-not-allowed" : ""}`}
+            className={`w-full text-right p-2 rounded-lg text-sm border transition ${selected === i ? "border-lime-500 bg-lime-50" : "border-gray-200 hover:bg-gray-50"} ${answered ? "opacity-75 cursor-not-allowed" : ""}`}
             disabled={answered}
           >
             {opt}
@@ -349,12 +349,12 @@ function ChallengeCard({ challenge, onAnswer }) {
       </div>
       {!answered && (
         <button onClick={handleAnswer} disabled={selected === null}
-          className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm font-bold disabled:opacity-50">
+          className="w-full mt-2 bg-lime-500 hover:bg-lime-600 text-black py-2 rounded-lg text-sm font-bold disabled:opacity-50 border-2 border-black">
           تأكيد الإجابة
         </button>
       )}
       <div className="text-center mt-1">
-        <span className="text-xs text-purple-600 font-bold">{challenge.points} نقطة</span>
+        <span className="text-xs text-lime-600 font-bold">{challenge.points} نقطة</span>
       </div>
       {/* Footer */}
       <div className="container mx-auto px-4 py-6 text-center">

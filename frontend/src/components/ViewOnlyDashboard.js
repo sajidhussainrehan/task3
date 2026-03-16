@@ -61,9 +61,9 @@ function ViewOnlyDashboard({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-4 shadow-lg">
+      <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black py-4 shadow-lg border-b-4 border-black">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -227,7 +227,7 @@ function ViewOnlyDashboard({ onLogout }) {
                       <p className="font-semibold">{task.description}</p>
                       <p className="text-sm text-gray-500">المجموعة: {task.group}</p>
                     </div>
-                    <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-sm font-bold">
+                    <span className="bg-lime-100 text-green-700 px-2 py-1 rounded text-sm font-bold border border-green-300">
                       {task.points} نقطة
                     </span>
                   </div>
@@ -312,7 +312,7 @@ function ViewOnlyDashboard({ onLogout }) {
                         </div>
                       </div>
                       <div className="text-center">
-                        <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                        <span className="bg-lime-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold border border-green-300">
                           💎 {comp.points} نقطة
                         </span>
                         <p className={`text-xs mt-1 font-semibold ${

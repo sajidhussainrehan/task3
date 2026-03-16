@@ -233,7 +233,7 @@ function Dashboard({ onLogout }) {
             <div className="flex gap-2 flex-wrap">
               <button onClick={() => setShowAddStudent(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="add-student-btn">➕ إضافة طالب</button>
               <button onClick={() => setShowQRModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="qr-codes-btn">📱 رموز QR</button>
-              <button onClick={() => setShowBulkPoints(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="bulk-points-btn">💎 نقاط جماعية</button>
+              <button onClick={() => setShowBulkPoints(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="bulk-points-btn">💎 نقاط جماعية</button>
             </div>
 
             {/* Stats */}
@@ -248,9 +248,9 @@ function Dashboard({ onLogout }) {
                 <div className="text-xl font-bold text-blue-600">{students.reduce((a, s) => a + s.points, 0)}</div>
                 <div className="text-xs text-gray-500">مجموع النقاط</div>
               </div>
-              <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-purple-100">
+              <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-green-100">
                 <p className="text-xl">🏅</p>
-                <div className="text-xl font-bold text-purple-600">{supervisors.length}</div>
+                <div className="text-xl font-bold text-green-600">{supervisors.length}</div>
                 <div className="text-xs text-gray-500">مجموعة</div>
               </div>
             </div>
@@ -444,21 +444,21 @@ function Dashboard({ onLogout }) {
             <form onSubmit={handleBulkPoints} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">المجموعة</label>
-                <select value={bulkGroup} onChange={e => setBulkGroup(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-purple-500" required data-testid="bulk-group">
+                <select value={bulkGroup} onChange={e => setBulkGroup(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" required data-testid="bulk-group">
                   <option value="">اختر المجموعة</option>
                   {supervisors.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">النقاط</label>
-                <input type="number" value={bulkPoints} onChange={e => setBulkPoints(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-purple-500" placeholder="مثال: 50 أو -20" required data-testid="bulk-points-input" />
+                <input type="number" value={bulkPoints} onChange={e => setBulkPoints(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="مثال: 50 أو -20" required data-testid="bulk-points-input" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">السبب</label>
-                <input type="text" value={bulkReason} onChange={e => setBulkReason(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-purple-500" placeholder="سبب إضافة/خصم النقاط" required data-testid="bulk-reason" />
+                <input type="text" value={bulkReason} onChange={e => setBulkReason(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="سبب إضافة/خصم النقاط" required data-testid="bulk-reason" />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={loading} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold disabled:opacity-50" data-testid="submit-bulk-points">تطبيق</button>
+                <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold disabled:opacity-50 border-2 border-black" data-testid="submit-bulk-points">تطبيق</button>
                 <button type="button" onClick={() => setShowBulkPoints(false)} className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-bold">إلغاء</button>
               </div>
             </form>

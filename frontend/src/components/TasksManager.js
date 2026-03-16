@@ -104,7 +104,7 @@ function TasksManager({ supervisors }) {
                 </div>
                 <p className="font-semibold text-gray-800">{task.description}</p>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-sm font-bold">💎 {task.points} نقطة</span>
+                  <span className="bg-lime-100 text-green-700 px-2 py-0.5 rounded text-sm font-bold border border-green-300">💎 {task.points} نقطة</span>
                   {task.claimed_by_name && <span className="text-sm text-gray-600">👤 حجزها: {task.claimed_by_name}</span>}
                 </div>
               </div>
