@@ -192,7 +192,7 @@ function ViewOnlyDashboard({ onLogout }) {
                         <td className="p-3 text-center">{i === 0 ? "🥇" : i + 1}</td>
                         <td className="p-3 font-semibold">{team.team}</td>
                         <td className="p-3 text-center">{team.played}</td>
-                        <td className="p-3 text-center text-violet-600">{team.wins || 0}</td>
+                        <td className="p-3 text-center text-lime-600">{team.wins || 0}</td>
                         <td className="p-3 text-center text-yellow-600">{team.draws || 0}</td>
                         <td className="p-3 text-center text-red-600">{team.losses || 0}</td>
                         <td className="p-3 text-center font-bold text-blue-600">{team.points}</td>
@@ -216,7 +216,7 @@ function ViewOnlyDashboard({ onLogout }) {
                 <div 
                   key={task.id} 
                   className={`p-4 rounded-lg border ${
-                    task.status === "completed" ? "bg-violet-50 border-violet-200" :
+                    task.status === "completed" ? "bg-lime-50 border-lime-200" :
                     task.status === "awaiting_approval" ? "bg-orange-50 border-orange-200" :
                     task.claimed_by ? "bg-yellow-50 border-yellow-200" :
                     "bg-white border-gray-200"
@@ -297,7 +297,7 @@ function ViewOnlyDashboard({ onLogout }) {
                   <div 
                     key={comp.id} 
                     className={`p-4 rounded-lg border ${
-                      comp.status === "active" ? "bg-violet-50 border-violet-200" :
+                      comp.status === "active" ? "bg-lime-50 border-lime-200" :
                       comp.status === "completed" ? "bg-gray-50 border-gray-200" :
                       "bg-yellow-50 border-yellow-200"
                     }`}
@@ -316,7 +316,7 @@ function ViewOnlyDashboard({ onLogout }) {
                           💎 {comp.points} نقطة
                         </span>
                         <p className={`text-xs mt-1 font-semibold ${
-                          comp.status === "active" ? "text-violet-600" :
+                          comp.status === "active" ? "text-lime-600" :
                           comp.status === "completed" ? "text-gray-500" :
                           "text-yellow-600"
                         }`}>
@@ -375,14 +375,14 @@ function ViewOnlyDashboard({ onLogout }) {
                     <p className="text-2xl font-bold text-blue-700">{selectedStudent.points}</p>
                     <p className="text-xs text-gray-600">إجمالي النقاط</p>
                   </div>
-                  <div className="bg-violet-50 p-3 rounded-lg text-center border-2 border-violet-200">
-                    <p className="text-2xl font-bold text-violet-700">
+                  <div className="bg-lime-50 p-3 rounded-lg text-center border-2 border-lime-200">
+                    <p className="text-2xl font-bold text-lime-700">
                       {halaqaHistory.reduce((sum, g) => sum + (g.total_points || 0), 0)}
                     </p>
-                    <p className="text-xs text-violet-600">نقاط القرآن 📚</p>
+                    <p className="text-xs text-lime-600">نقاط القرآن 📚</p>
                   </div>
-                  <div className="bg-purple-50 p-3 rounded-lg text-center">
-                    <p className="text-2xl font-bold text-purple-700">
+                  <div className="bg-green-50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-700">
                       {students.findIndex(s => s.id === selectedStudent.id) + 1}
                     </p>
                     <p className="text-xs text-gray-600">الترتيب</p>
@@ -393,15 +393,15 @@ function ViewOnlyDashboard({ onLogout }) {
               {/* Halaqa Grades Details */}
               {halaqaHistory.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="font-bold text-violet-700 mb-2 flex items-center gap-2">
+                  <h3 className="font-bold text-lime-700 mb-2 flex items-center gap-2">
                     📚 درجات خلقة (قرآن)
                   </h3>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {halaqaHistory.map((grade) => (
-                      <div key={grade.id} className="bg-violet-50 p-3 rounded-lg text-sm border border-violet-100">
+                      <div key={grade.id} className="bg-lime-50 p-3 rounded-lg text-sm border border-lime-100">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-semibold text-violet-800">📖 {grade.student_name}</span>
-                          <span className="font-bold text-violet-600">{grade.total_points} pts</span>
+                          <span className="font-semibold text-lime-800">📖 {grade.student_name}</span>
+                          <span className="font-bold text-lime-600">{grade.total_points} pts</span>
                         </div>
                         <div className="text-xs text-gray-500">
                           حفظ: {grade.memorization} | مراجعة: {grade.revision} | متون: {grade.mutun}
@@ -423,7 +423,7 @@ function ViewOnlyDashboard({ onLogout }) {
                     {pointsLog.slice(0, 10).map((log, i) => (
                       <div key={i} className="bg-gray-50 p-2 rounded text-sm flex justify-between">
                         <span>{log.reason}</span>
-                        <span className={log.points > 0 ? "text-violet-600" : "text-red-600"}>
+                        <span className={log.points > 0 ? "text-lime-600" : "text-red-600"}>
                           {log.points > 0 ? "+" : ""}{log.points}
                         </span>
                       </div>

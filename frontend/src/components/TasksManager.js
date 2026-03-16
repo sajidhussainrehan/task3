@@ -61,7 +61,7 @@ function TasksManager({ supervisors }) {
   const filteredTasks = filter === "all" ? tasks : tasks.filter(t => t.group === filter);
 
   const getStatusBadge = (task) => {
-    if (task.status === "completed") return <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">✅ مكتملة</span>;
+    if (task.status === "completed") return <span className="bg-lime-500 text-black px-2 py-1 rounded-full text-xs font-bold border border-black">✅ مكتملة</span>;
     if (task.status === "awaiting_approval") return <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold">⏳ بانتظار الموافقة</span>;
     if (task.claimed_by) return <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold">🔒 محجوزة</span>;
     return <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">📌 متاحة</span>;
@@ -76,22 +76,22 @@ function TasksManager({ supervisors }) {
 
   return (
     <div className="space-y-4">
-      {message && <div className="bg-green-100 text-green-700 p-3 rounded-lg text-center font-semibold">{message}</div>}
+      {message && <div className="bg-lime-100 text-green-700 p-3 rounded-lg text-center font-semibold border border-lime-300">{message}</div>}
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setFilter("all")} className={`px-3 py-1 rounded-full text-sm font-semibold ${filter === "all" ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700"}`}>الكل</button>
+          <button onClick={() => setFilter("all")} className={`px-3 py-1 rounded-full text-sm font-semibold border-2 ${filter === "all" ? "bg-lime-500 text-black border-black" : "bg-gray-200 text-gray-700 border-gray-300"}`}>الكل</button>
           {supervisors.map(s => (
-            <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1 rounded-full text-sm font-semibold ${filter === s ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700"}`}>{s}</button>
+            <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1 rounded-full text-sm font-semibold border-2 ${filter === s ? "bg-lime-500 text-black border-black" : "bg-gray-200 text-gray-700 border-gray-300"}`}>{s}</button>
           ))}
         </div>
-        <button onClick={() => setShowAdd(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="add-task-btn">📌 مهمة جديدة</button>
+        <button onClick={() => setShowAdd(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="add-task-btn">📌 مهمة جديدة</button>
       </div>
 
       <div className="space-y-3">
         {filteredTasks.map(task => (
           <div key={task.id} className={`bg-white rounded-xl shadow p-4 border-r-4 ${
-            task.status === "completed" ? "border-green-500 opacity-75" : 
+            task.status === "completed" ? "border-lime-500 opacity-75" : 
             task.status === "awaiting_approval" ? "border-orange-500" : 
             task.claimed_by ? "border-yellow-500" : "border-blue-500"
           }`}>
@@ -110,7 +110,7 @@ function TasksManager({ supervisors }) {
               </div>
               <div className="flex gap-2">
                 {task.status === "awaiting_approval" && (
-                  <button onClick={() => completeTask(task.id)} className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold" data-testid={`complete-task-${task.id}`}>
+                  <button onClick={() => completeTask(task.id)} className="bg-lime-500 hover:bg-lime-600 text-black px-3 py-1 rounded-lg text-sm font-semibold border border-black" data-testid={`complete-task-${task.id}`}>
                     ✅ اعتماد
                   </button>
                 )}
@@ -130,21 +130,21 @@ function TasksManager({ supervisors }) {
             <form onSubmit={addTask} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">المجموعة</label>
-                <select value={group} onChange={e => setGroup(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" required data-testid="task-group">
+                <select value={group} onChange={e => setGroup(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" required data-testid="task-group">
                   <option value="">اختر المجموعة</option>
                   {supervisors.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">وصف المهمة</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" placeholder="اكتب المهمة هنا" rows="3" required data-testid="task-description" />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="اكتب المهمة هنا" rows="3" required data-testid="task-description" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">النقاط</label>
-                <input type="number" min="1" value={points} onChange={e => setPoints(parseInt(e.target.value) || 0)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" required data-testid="task-points" />
+                <input type="number" min="1" value={points} onChange={e => setPoints(parseInt(e.target.value) || 0)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" required data-testid="task-points" />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold disabled:opacity-50" data-testid="submit-task">
+                <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold disabled:opacity-50 border-2 border-black" data-testid="submit-task">
                   {loading ? "جاري الحفظ..." : "إضافة المهمة"}
                 </button>
                 <button type="button" onClick={() => setShowAdd(false)} className="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-3 rounded-lg font-bold">إلغاء</button>

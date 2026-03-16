@@ -16,7 +16,7 @@ function StudentProfilePublic() {
           <p className="text-sm text-gray-600">{renderError}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="mt-4 bg-violet-600 text-white px-4 py-2 rounded-lg"
+            className="mt-4 bg-lime-500 text-black px-4 py-2 rounded-lg border-2 border-black"
           >
             إعادة تحميل
           </button>
@@ -129,7 +129,7 @@ function StudentProfileContent({ setRenderError }) {
 
   // Wrap render in try-catch
   try {
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 to-purple-50"><div className="text-xl text-gray-600">⏳ جاري التحميل...</div></div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-lime-50 to-green-50"><div className="text-xl text-gray-600">⏳ جاري التحميل...</div></div>;
     if (error || !student) return <div className="min-h-screen flex items-center justify-center bg-red-50"><div className="text-xl text-red-600">❌ {error || "الطالب غير موجود"}</div></div>;
 
     const answeredChallenges = student.answered_challenges || [];
@@ -139,10 +139,10 @@ function StudentProfileContent({ setRenderError }) {
     const safePointsLog = Array.isArray(pointsLog) ? pointsLog : [];
 
     return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 pb-8" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50 pb-8" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white pt-6 pb-16 px-4">
-        <h1 className="text-center text-lg font-bold mb-6">� نادي غِراس</h1>
+      <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black pt-6 pb-16 px-4 border-b-4 border-black">
+        <h1 className="text-center text-lg font-bold mb-6 text-black">🌟 بارع</h1>
         <div className="flex flex-col items-center">
           {student.image_url ? (
             <img src={student.image_url} alt="" className="w-24 h-24 rounded-full object-cover border-4 border-white/30 shadow-lg" />
@@ -150,14 +150,14 @@ function StudentProfileContent({ setRenderError }) {
             <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-4xl font-bold shadow-lg">{(student.name || '?').charAt(0)}</div>
           )}
           <h2 className="text-2xl font-bold mt-3" data-testid="student-name">{student.name}</h2>
-          {student.supervisor && <p className="text-violet-100 text-sm mt-1">🏅 {student.supervisor}</p>}
+          {student.supervisor && <p className="text-green-800 text-sm mt-1">🏅 {student.supervisor}</p>}
         </div>
       </div>
 
       {/* Message */}
       {message && (
         <div className="container mx-auto px-4 -mt-6">
-          <div className="bg-white border-r-4 border-violet-500 text-violet-700 p-3 rounded-lg shadow text-center font-semibold animate-fadeIn">{message}</div>
+          <div className="bg-white border-r-4 border-lime-500 text-green-700 p-3 rounded-lg shadow text-center font-semibold animate-fadeIn">{message}</div>
         </div>
       )}
 
@@ -179,9 +179,9 @@ function StudentProfileContent({ setRenderError }) {
 
       {/* 2. Rank & Points */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-2xl p-4 text-center shadow-xl border border-violet-100">
+          <div className="bg-white rounded-2xl p-4 text-center shadow-xl border border-lime-100">
             <p className="text-2xl">🏆</p>
-            <div className="text-2xl font-bold text-violet-600" data-testid="student-rank">{rank || '-'}</div>
+            <div className="text-2xl font-bold text-lime-600" data-testid="student-rank">{rank || '-'}</div>
             <div className="text-xs text-gray-500">الترتيب العام من {totalStudents || 0}</div>
           </div>
           <div className="bg-white rounded-2xl p-4 text-center shadow-xl border border-orange-100">
@@ -198,8 +198,8 @@ function StudentProfileContent({ setRenderError }) {
 
         {/* League Standings */}
         {safeStandings.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-violet-100">
-            <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-3">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-lime-100">
+            <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black p-3 border-b-2 border-black">
               <h3 className="font-bold text-center text-sm">⚽ جدول الدوري الكروي</h3>
             </div>
             <div className="overflow-x-auto">
@@ -217,14 +217,14 @@ function StudentProfileContent({ setRenderError }) {
                 </thead>
                 <tbody>
                   {safeStandings.map((t, i) => (
-                    <tr key={t.team || i} className={`${t.team && t.team === student.supervisor ? "bg-violet-50 font-bold" : i % 2 === 0 ? "bg-gray-50" : ""}`}>
+                    <tr key={t.team || i} className={`${t.team && t.team === student.supervisor ? "bg-lime-50 font-bold" : i % 2 === 0 ? "bg-gray-50" : ""}`}>
                       <td className="p-2 text-center">{i === 0 ? "🥇" : i + 1}</td>
                       <td className="p-2 font-semibold">{t.team || '-'}</td>
                       <td className="p-2 text-center">{t.played}</td>
                       <td className="p-2 text-center">{t.wins || 0}</td>
                       <td className="p-2 text-center">{t.draws || 0}</td>
                       <td className="p-2 text-center">{t.losses || 0}</td>
-                      <td className="p-2 text-center font-bold text-violet-600">{t.points}</td>
+                      <td className="p-2 text-center font-bold text-lime-600">{t.points}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -259,7 +259,7 @@ function StudentProfileContent({ setRenderError }) {
             <div className="p-4 space-y-3">
               {safeTasks.map(task => (
                 <div key={task.id} className={`p-3 rounded-xl border ${
-                  task.status === "completed" ? "border-violet-400 bg-violet-50" :
+                  task.status === "completed" ? "border-lime-400 bg-lime-50" :
                   task.status === "awaiting_approval" ? "border-orange-400 bg-orange-50" :
                   task.claimed_by === studentId ? "border-yellow-400 bg-yellow-50" : "border-blue-200 bg-blue-50"
                 }`}>
@@ -273,7 +273,7 @@ function StudentProfileContent({ setRenderError }) {
                     {task.status === "awaiting_approval" && task.claimed_by === studentId ? (
                       <span className="text-orange-600 text-xs font-bold">⏳ بانتظار موافقة المشرف</span>
                     ) : task.status === "completed" && task.claimed_by === studentId ? (
-                      <span className="text-violet-600 text-xs font-bold">✅ تم الاعتماد</span>
+                      <span className="text-lime-600 text-xs font-bold">✅ تم الاعتماد</span>
                     ) : !task.claimed_by ? (
                       <button onClick={() => claimTask(task.id)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold" data-testid={`claim-task-${task.id}`}>
                         ✋ احجز المهمة
@@ -299,7 +299,7 @@ function StudentProfileContent({ setRenderError }) {
                     <p className="text-sm font-semibold text-gray-800">{((log.points || 0) > 0 ? "✅" : "❌") + " " + (log.reason || "")}</p>
                     <p className="text-xs text-gray-400">📅 {formatDate(log.created_at)}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${log.points > 0 ? "bg-violet-100 text-violet-700" : "bg-red-100 text-red-700"}`}>
+                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${log.points > 0 ? "bg-lime-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                     {log.points > 0 ? "+" : ""}{log.points || 0}
                   </span>
                 </div>

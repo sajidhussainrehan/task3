@@ -51,7 +51,7 @@ function LeaderboardTicker({ students }) {
   const getRankStyle = (rank) => {
     if (rank <= 5) return "bg-gradient-to-r from-yellow-400 to-orange-400 text-white";
     if (rank <= 10) return "bg-gradient-to-r from-blue-400 to-cyan-400 text-white";
-    if (rank <= 15) return "bg-gradient-to-r from-purple-400 to-pink-400 text-white";
+    if (rank <= 15) return "bg-gradient-to-r from-lime-400 to-green-500 text-black";
     return "bg-gradient-to-r from-gray-400 to-gray-500 text-white";
   };
 

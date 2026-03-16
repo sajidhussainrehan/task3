@@ -1,4 +1,4 @@
-/* New Theme Styles - Purple/Violet/Indigo */
+/* New Theme Styles - Light Green + Black */
 
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
@@ -41,23 +41,24 @@ tr {
   transition: all 0.3s ease;
 }
 
-/* Custom scrollbar - Purple theme */
+/* Custom scrollbar - Light Green + Black theme */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f3f0ff;
+  background: #ecfdf5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #8b5cf6;
+  background: #22c55e;
   border-radius: 5px;
+  border: 2px solid #000;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #7c3aed;
+  background: #16a34a;
 }
 
 /* Responsive text */
