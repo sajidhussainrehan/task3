@@ -22,7 +22,16 @@ import {
 } from "../components/ui/dialog";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = BACKEND_URL.endsWith('/api') ? BACKEND_URL : `${BACKEND_URL}/api`;
+// Ensure BACKEND_URL uses same protocol as current page (HTTP or HTTPS)
+const getSecureBackendUrl = (url) => {
+  if (!url) return '';
+  if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+    return url.replace('http:', 'https:');
+  }
+  return url;
+};
+const API_BASE = getSecureBackendUrl(BACKEND_URL);
+const API = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
 
 const QURAN_CATEGORIES = [
   { id: "hifz", name: "حفظ", points: 10, emoji: "📖", icon: BookOpen },
