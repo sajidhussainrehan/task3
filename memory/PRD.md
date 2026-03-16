@@ -1,51 +1,42 @@
-# نادي بارع الشبابي - Youth Club Points Tracker
+# نادي غِراس - نظام إدارة نقاط الطلاب
 
-## Original Problem Statement
-Arabic-language web app for "نادي بارع الشبابي" (Barea Youth Club) to track student points earned in activities.
+## المشكلة الأصلية
+بناء تطبيق ويب لإدارة نظام مكافآت الطلاب لنادي غِراس.
 
-## Tech Stack
-- Frontend: React.js, Tailwind CSS, Shadcn/UI
-- Backend: FastAPI, MongoDB (motor async driver)
+## المتطلبات المنجزة
 
-## Architecture
-```
-/app/backend/server.py       - All API endpoints
-/app/frontend/src/pages/
-  AdminPage.jsx               - Admin dashboard (4 tabs: students, tasks, competitions, league)
-  HomePage.jsx                - Public leaderboard
-  StudentProfilePage.jsx      - Individual student page (QR destination)
-  QuizPage.jsx                - Standalone quiz page
-  ViewerPage.jsx              - Read-only spectator view
-```
+### 1. إدارة الطلاب (إضافة/تعديل/حذف مع صور)
+### 2. نظام النقاط (إيجابية/سلبية/مخصصة/جماعية) مع سجل
+### 3. المنافسات (أسئلة اختيار من متعدد)
+### 4. مسابقة رمضان (15 سؤال يومي)
+### 5. شريط المتصدرين (بودويم + شريط أفقي)
+### 6. المهام الأسبوعية (إنشاء/حجز/اعتماد/حذف تلقائي)
+### 7. الدوري الكروي (جدولة مباريات ← إدخال نتائج ← جدول ترتيب)
+### 8. نجم الدوري (اختيار من قائمة الطلاب مع صورة + سبب)
+### 9. روابط المشاهدة (للمشرفين الفرعيين - مشاهدة فقط)
+### 10. صفحة الطالب العامة (نجم ← ترتيب ← دوري ← مسابقات ← مهام ← سجل)
+### 11. رموز QR لكل طالب
+### 12. تصميم حيوي مع إيموجيات وصور الطلاب في كل مكان
 
-## What's Implemented
-- [x] Student CRUD with image cropping
-- [x] Team management (4 teams with colors/icons)
-- [x] QR code generation + bulk printing
-- [x] Points system (add/deduct with emoji categories)
-- [x] Custom points for individual student
-- [x] Team-wide points (apply to all team members at once)
-- [x] Star Player (نجم الدوري)
-- [x] Top 10 leaderboard
-- [x] Competitions CRUD + quiz answering with auto-scoring
-- [x] Football league management (matches, standings)
-- [x] Spectator/Viewer page (read-only)
-- [x] Admin PIN protection (171920)
-- [x] Student page isolated (no external links)
-- [x] QR code regeneration (invalidate old codes)
-- [x] Weekly Tasks System:
-  - Auto-distribute 4 tasks to all teams
-  - Adhan/Speech: admin assigns specific student
-  - Social: students reserve items (قهوة/شاي/حلى/سمبوسة)
-  - Items are exclusive per team (one student per item)
-  - Special Dinner: manual task by admin
-  - Tasks can be cleared manually or auto-scheduled
+## بدون نظام تسجيل دخول (بطلب المستخدم)
 
-## Routes
-- `/` - Homepage
-- `/admin` - Admin (PIN: 171920)
-- `/student/:studentId` - Student profile
-- `/quiz/:competitionId` - Quiz
-- `/viewer` - Spectator view
+## البنية التقنية
+- Backend: FastAPI + MongoDB (server.py)
+- Frontend: React + Tailwind CSS
+- Collections: students, challenges, tasks, matches, league_star, points_log, viewer_links
 
-## Testing: 100% (iteration_3.json - 34/34 passed)
+## الملفات الرئيسية
+- DashboardNew.js (أقسام: طلاب/مهام/دوري/نجم/روابط)
+- StudentProfilePublic.js, ViewerPage.js
+- FootballLeague.js, TasksManager.js, LeagueStarManager.js, ViewerLinksManager.js
+- PointsModal.js, LeaderboardTicker.js, RamadanQuiz.js, ChallengesManager.js
+
+## المهام المستقبلية
+- P1: تصدير تقارير PDF/Excel
+- P2: إشعارات واتساب لأولياء الأمور
+- P3: إحصائيات وتقارير متقدمة
+
+## تاريخ التحديثات
+- مارس 2026: إيموجيات + صور الطلاب في كل مكان + تصميم حيوي
+- مارس 2026: مهام أسبوعية + دوري كروي + نجم الدوري + نقاط جماعية + سجل نقاط + روابط مشاهدة
+- فبراير 2026: إصلاح أداء + CSS + تنظيف الكود
