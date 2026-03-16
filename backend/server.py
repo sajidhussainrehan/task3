@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from passlib.context import CryptContext
 import os
 import logging
 from pathlib import Path
@@ -14,6 +15,13 @@ import base64
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Admin credentials from env
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
 # Create uploads directory
 UPLOADS_DIR = ROOT_DIR / 'uploads'
@@ -239,10 +247,309 @@ class SpecialDinner(BaseModel):
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# =================== AUTH MODELS ===================
+
+class AdminLogin(BaseModel):
+    username: str
+    password: str
+
+class AdminLoginResponse(BaseModel):
+    success: bool
+    message: str
+
+# =================== TEACHER MODELS ===================
+
+QURAN_CATEGORIES = [
+    {"name": "حفظ", "points": 10, "emoji": "📖"},
+    {"name": "مراجعة", "points": 5, "emoji": "🔄"},
+    {"name": "متون", "points": 3, "emoji": "📜"},
+]
+
+class Teacher(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    username: str
+    password_hash: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TeacherCreate(BaseModel):
+    name: str
+    username: str
+    password: str
+
+class TeacherLogin(BaseModel):
+    username: str
+    password: str
+
+class TeacherStudentAssignment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    teacher_id: str
+    student_id: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class QuranPointTransaction(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    student_id: str
+    teacher_id: str
+    category: str  # حفظ, مراجعة, متون
+    points: int
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class QuranPointCreate(BaseModel):
+    student_id: str
+    category: str
+    points: int
+    notes: Optional[str] = None
+
 # Root API
 @api_router.get("/")
 async def root():
     return {"message": "نادي بارع الشبابي API"}
+
+# =================== ADMIN AUTH APIs ===================
+
+@api_router.post("/admin/login", response_model=AdminLoginResponse)
+async def admin_login(credentials: AdminLogin):
+    if credentials.username == ADMIN_USERNAME and credentials.password == ADMIN_PASSWORD:
+        return {"success": True, "message": "تم تسجيل الدخول بنجاح"}
+    raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+
+@api_router.get("/admin/verify")
+async def verify_admin(username: str, password: str):
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        return {"valid": True}
+    return {"valid": False}
+
+# =================== TEACHER APIs ===================
+
+@api_router.get("/quran-categories")
+async def get_quran_categories():
+    return QURAN_CATEGORIES
+
+@api_router.post("/teachers", response_model=Teacher)
+async def create_teacher(teacher: TeacherCreate):
+    # Check if username already exists
+    existing = await db.teachers.find_one({"username": teacher.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="اسم المستخدم مستخدم بالفعل")
+    
+    teacher_obj = Teacher(
+        name=teacher.name,
+        username=teacher.username,
+        password_hash=pwd_context.hash(teacher.password)
+    )
+    doc = teacher_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.teachers.insert_one(doc)
+    # Don't return password_hash
+    teacher_obj.password_hash = ""
+    return teacher_obj
+
+@api_router.get("/teachers")
+async def get_teachers():
+    teachers = await db.teachers.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
+    for t in teachers:
+        if isinstance(t.get('created_at'), str):
+            t['created_at'] = datetime.fromisoformat(t['created_at'])
+    return teachers
+
+@api_router.delete("/teachers/{teacher_id}")
+async def delete_teacher(teacher_id: str):
+    result = await db.teachers.delete_one({"id": teacher_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="المعلم غير موجود")
+    # Remove all assignments for this teacher
+    await db.teacher_assignments.delete_many({"teacher_id": teacher_id})
+    return {"message": "تم حذف المعلم بنجاح"}
+
+@api_router.post("/teachers/login", response_model=AdminLoginResponse)
+async def teacher_login(credentials: TeacherLogin):
+    teacher = await db.teachers.find_one({"username": credentials.username})
+    if not teacher:
+        raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+    
+    if not pwd_context.verify(credentials.password, teacher["password_hash"]):
+        raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+    
+    return {"success": True, "message": "تم تسجيل الدخول بنجاح", "teacher_id": teacher["id"], "name": teacher["name"]}
+
+# Teacher-Student Assignments (Supervisor assigns students to teachers)
+@api_router.post("/teacher-assignments")
+async def assign_student_to_teacher(data: dict):
+    teacher_id = data.get("teacher_id")
+    student_id = data.get("student_id")
+    
+    if not teacher_id or not student_id:
+        raise HTTPException(status_code=400, detail="يرجى تحديد المعلم والطالب")
+    
+    # Check if teacher exists
+    teacher = await db.teachers.find_one({"id": teacher_id})
+    if not teacher:
+        raise HTTPException(status_code=404, detail="المعلم غير موجود")
+    
+    # Check if student exists
+    student = await db.students.find_one({"id": student_id})
+    if not student:
+        raise HTTPException(status_code=404, detail="الطالب غير موجود")
+    
+    # Check if student already assigned to this teacher
+    existing = await db.teacher_assignments.find_one({"teacher_id": teacher_id, "student_id": student_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="الطالب مخصص بالفعل لهذا المعلم")
+    
+    # Check if teacher already has 3 students
+    current_count = await db.teacher_assignments.count_documents({"teacher_id": teacher_id})
+    if current_count >= 3:
+        raise HTTPException(status_code=400, detail="المعلم لديه بالفعل الحد الأقصى من الطلاب (3)")
+    
+    assignment = TeacherStudentAssignment(teacher_id=teacher_id, student_id=student_id)
+    doc = assignment.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.teacher_assignments.insert_one(doc)
+    
+    return {"message": "تم تخصيص الطالب للمعلم بنجاح"}
+
+@api_router.get("/teacher-assignments/{teacher_id}")
+async def get_teacher_students(teacher_id: str):
+    assignments = await db.teacher_assignments.find({"teacher_id": teacher_id}, {"_id": 0}).to_list(10)
+    student_ids = [a["student_id"] for a in assignments]
+    
+    students = []
+    for sid in student_ids:
+        student = await db.students.find_one({"id": sid}, {"_id": 0})
+        if student:
+            if isinstance(student.get('created_at'), str):
+                student['created_at'] = datetime.fromisoformat(student['created_at'])
+            students.append(student)
+    
+    return students
+
+@api_router.get("/teacher-assignments/student/{student_id}")
+async def get_student_teachers(student_id: str):
+    assignments = await db.teacher_assignments.find({"student_id": student_id}, {"_id": 0}).to_list(10)
+    teacher_ids = [a["teacher_id"] for a in assignments]
+    
+    teachers = []
+    for tid in teacher_ids:
+        teacher = await db.teachers.find_one({"id": tid}, {"_id": 0, "password_hash": 0})
+        if teacher:
+            if isinstance(teacher.get('created_at'), str):
+                teacher['created_at'] = datetime.fromisoformat(teacher['created_at'])
+            teachers.append(teacher)
+    
+    return teachers
+
+@api_router.delete("/teacher-assignments")
+async def remove_student_from_teacher(data: dict):
+    teacher_id = data.get("teacher_id")
+    student_id = data.get("student_id")
+    
+    result = await db.teacher_assignments.delete_one({"teacher_id": teacher_id, "student_id": student_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="التخصيص غير موجود")
+    
+    return {"message": "تم إزالة تخصيص الطالب"}
+
+# Quran Points APIs (Teachers add points for their assigned students)
+@api_router.post("/quran-points", response_model=QuranPointTransaction)
+async def add_quran_points(data: dict):
+    teacher_id = data.get("teacher_id")
+    student_id = data.get("student_id")
+    category = data.get("category")
+    points = data.get("points")
+    notes = data.get("notes")
+    
+    # Verify teacher is assigned to this student
+    assignment = await db.teacher_assignments.find_one({"teacher_id": teacher_id, "student_id": student_id})
+    if not assignment:
+        raise HTTPException(status_code=403, detail="المعلم غير مخصص لهذا الطالب")
+    
+    # Create transaction
+    trans_obj = QuranPointTransaction(
+        student_id=student_id,
+        teacher_id=teacher_id,
+        category=category,
+        points=points,
+        notes=notes
+    )
+    doc = trans_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.quran_points.insert_one(doc)
+    
+    # Update student's total points
+    student = await db.students.find_one({"id": student_id}, {"_id": 0})
+    if student:
+        new_total = student.get('total_points', 0) + points
+        await db.students.update_one(
+            {"id": student_id},
+            {"$set": {"total_points": new_total}}
+        )
+    
+    return trans_obj
+
+@api_router.get("/quran-points/teacher/{teacher_id}")
+async def get_teacher_quran_points(teacher_id: str):
+    transactions = await db.quran_points.find(
+        {"teacher_id": teacher_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    # Add student info to each transaction
+    result = []
+    for t in transactions:
+        if isinstance(t.get('created_at'), str):
+            t['created_at'] = datetime.fromisoformat(t['created_at'])
+        student = await db.students.find_one({"id": t["student_id"]}, {"_id": 0, "name": 1, "photo": 1})
+        if student:
+            t['student'] = student
+        result.append(t)
+    
+    return result
+
+@api_router.get("/quran-points/student/{student_id}")
+async def get_student_quran_points(student_id: str):
+    transactions = await db.quran_points.find(
+        {"student_id": student_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    
+    for t in transactions:
+        if isinstance(t.get('created_at'), str):
+            t['created_at'] = datetime.fromisoformat(t['created_at'])
+    
+    return transactions
+
+@api_router.get("/teacher/dashboard/{teacher_id}")
+async def get_teacher_dashboard(teacher_id: str):
+    """Get all data a teacher needs for their dashboard"""
+    # Get teacher info
+    teacher = await db.teachers.find_one({"id": teacher_id}, {"_id": 0, "password_hash": 0})
+    if not teacher:
+        raise HTTPException(status_code=404, detail="المعلم غير موجود")
+    
+    # Get assigned students
+    students = await get_teacher_students(teacher_id)
+    
+    # Get recent quran points added by this teacher
+    recent_points = await db.quran_points.find(
+        {"teacher_id": teacher_id}, {"_id": 0}
+    ).sort("created_at", -1).limit(20).to_list(20)
+    
+    for t in recent_points:
+        if isinstance(t.get('created_at'), str):
+            t['created_at'] = datetime.fromisoformat(t['created_at'])
+        student = await db.students.find_one({"id": t["student_id"]}, {"_id": 0, "name": 1, "photo": 1})
+        if student:
+            t['student'] = student
+    
+    return {
+        "teacher": teacher,
+        "students": students,
+        "recent_points": recent_points,
+        "categories": QURAN_CATEGORIES
+    }
 
 # Point Categories
 @api_router.get("/categories/deductions")

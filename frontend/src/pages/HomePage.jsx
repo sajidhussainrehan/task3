@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Trophy, Users, Star, Medal, ChevronLeft, ChevronRight, Crown, Shield, Rocket, Sparkles } from "lucide-react";
+import { Trophy, Users, Star, Medal, ChevronLeft, ChevronRight, Crown, Shield, Rocket, Sparkles, Eye, School, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -492,6 +493,48 @@ export default function HomePage() {
               </CardContent>
             </Card>
           </div>
+        </div>
+        {/* Quick Access Navigation */}
+        <div className="mt-12">
+          <h2 className="text-xl font-bold text-[#3d2b1f] mb-4 text-center">الوصول السريع</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            <Link to="/viewer">
+              <Button 
+                variant="outline"
+                className="w-full h-16 border-2 border-[#3d2b1f]/20 hover:border-[#3d2b1f] hover:bg-[#3d2b1f]/5 rounded-xl flex flex-col items-center gap-1"
+              >
+                <Eye className="w-5 h-5" />
+                <span className="font-medium">صفحة المشاهد</span>
+                <span className="text-xs text-gray-500">للمتابعة فقط</span>
+              </Button>
+            </Link>
+            <Link to="/teacher">
+              <Button 
+                variant="outline"
+                className="w-full h-16 border-2 border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl flex flex-col items-center gap-1"
+              >
+                <School className="w-5 h-5 text-emerald-600" />
+                <span className="font-medium text-emerald-800">بوابة المعلم</span>
+                <span className="text-xs text-gray-500">للمعلمين</span>
+              </Button>
+            </Link>
+            <Link to="/admin">
+              <Button 
+                variant="outline"
+                className="w-full h-16 border-2 border-amber-200 hover:border-amber-500 hover:bg-amber-50 rounded-xl flex flex-col items-center gap-1"
+              >
+                <Lock className="w-5 h-5 text-amber-600" />
+                <span className="font-medium text-amber-800">لوحة التحكم</span>
+                <span className="text-xs text-gray-500">للمشرفين</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500">
+            صنع بـ ❤️ - made with. aboughaith
+          </p>
         </div>
       </main>
     </div>

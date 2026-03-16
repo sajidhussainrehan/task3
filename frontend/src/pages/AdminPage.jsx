@@ -8,7 +8,7 @@ import {
   MinusCircle, PlusCircle, CheckCircle, 
   Settings, Phone, Crown, Star, Shield, Rocket,
   Search, QrCode, X, Download, Printer, Sparkles, Edit2, Eye, Goal,
-  CalendarDays, Swords, ClipboardList, UtensilsCrossed
+  CalendarDays, Swords, ClipboardList, UtensilsCrossed, School, BookOpen
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -51,11 +51,12 @@ const TeamIcon = ({ teamId, className }) => {
 };
 
 export default function AdminPage() {
-  // PIN protection
+  // Admin authentication with username/password
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState(false);
-  const ADMIN_PIN = "171920";
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [students, setStudents] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -122,6 +123,14 @@ export default function AdminPage() {
   const [dinnerStudentId, setDinnerStudentId] = useState("");
   const [dinnerDialogOpen, setDinnerDialogOpen] = useState(false);
 
+  // Teachers states
+  const [teachers, setTeachers] = useState([]);
+  const [newTeacher, setNewTeacher] = useState({ name: "", username: "", password: "" });
+  const [addTeacherDialogOpen, setAddTeacherDialogOpen] = useState(false);
+  const [teacherAssignments, setTeacherAssignments] = useState({});
+  const [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState(null);
+  const [assignStudentDialogOpen, setAssignStudentDialogOpen] = useState(false);
+
   // Question form
   const [newQuestion, setNewQuestion] = useState({
     text: "",
@@ -149,21 +158,40 @@ export default function AdminPage() {
     }
   }, [isAuthenticated]);
 
-  const handlePinSubmit = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (pinInput === ADMIN_PIN) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "true");
-      setPinError(false);
-    } else {
-      setPinError(true);
-      setPinInput("");
+    if (!username.trim() || !password.trim()) {
+      setLoginError("يرجى إدخال اسم المستخدم وكلمة المرور");
+      return;
+    }
+
+    setIsLoggingIn(true);
+    setLoginError("");
+    
+    try {
+      const res = await axios.post(`${API}/admin/login`, {
+        username: username,
+        password: password
+      });
+      
+      if (res.data.success) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem("admin_auth", "true");
+        setLoginError("");
+      } else {
+        setLoginError("اسم المستخدم أو كلمة المرور غير صحيحة");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setLoginError(error.response?.data?.detail || "اسم المستخدم أو كلمة المرور غير صحيحة");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const fetchData = async () => {
     try {
-      const [studentsRes, teamsRes, competitionsRes, deductionsRes, positiveRes, starRes, matchesRes, standingsRes, tasksRes] = await Promise.all([
+      const [studentsRes, teamsRes, competitionsRes, deductionsRes, positiveRes, starRes, matchesRes, standingsRes, tasksRes, teachersRes] = await Promise.all([
         axios.get(`${API}/students`),
         axios.get(`${API}/teams`),
         axios.get(`${API}/competitions`),
@@ -172,7 +200,8 @@ export default function AdminPage() {
         axios.get(`${API}/star-player`),
         axios.get(`${API}/league/matches`),
         axios.get(`${API}/league/standings`),
-        axios.get(`${API}/tasks/active`)
+        axios.get(`${API}/tasks/active`),
+        axios.get(`${API}/teachers`)
       ]);
       setStudents(studentsRes.data);
       setTeams(teamsRes.data);
@@ -186,6 +215,19 @@ export default function AdminPage() {
       setSocialReservations(tasksRes.data.reservations || []);
       setSpecialDinners(tasksRes.data.dinners || []);
       setTaskWeek(tasksRes.data.week || "");
+      setTeachers(teachersRes.data || []);
+      
+      // Load teacher assignments
+      const assignments = {};
+      for (const teacher of teachersRes.data || []) {
+        try {
+          const res = await axios.get(`${API}/teacher-assignments/${teacher.id}`);
+          assignments[teacher.id] = res.data || [];
+        } catch (e) {
+          assignments[teacher.id] = [];
+        }
+      }
+      setTeacherAssignments(assignments);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("حدث خطأ في تحميل البيانات");
@@ -650,6 +692,65 @@ export default function AdminPage() {
 
   const getTeamById = (teamId) => teams.find(t => t.id === teamId);
 
+  // Teacher management handlers
+  const handleAddTeacher = async () => {
+    if (!newTeacher.name.trim() || !newTeacher.username.trim() || !newTeacher.password.trim()) {
+      toast.error("يرجى إدخال جميع بيانات المعلم");
+      return;
+    }
+    
+    try {
+      await axios.post(`${API}/teachers`, newTeacher);
+      toast.success("تم إضافة المعلم بنجاح");
+      setNewTeacher({ name: "", username: "", password: "" });
+      setAddTeacherDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error("Error adding teacher:", error);
+      toast.error(error.response?.data?.detail || "حدث خطأ في إضافة المعلم");
+    }
+  };
+
+  const handleDeleteTeacher = async (teacherId) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا المعلم؟")) return;
+    
+    try {
+      await axios.delete(`${API}/teachers/${teacherId}`);
+      toast.success("تم حذف المعلم بنجاح");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting teacher:", error);
+      toast.error("حدث خطأ في حذف المعلم");
+    }
+  };
+
+  const handleAssignStudent = async (teacherId, studentId) => {
+    try {
+      await axios.post(`${API}/teacher-assignments`, {
+        teacher_id: teacherId,
+        student_id: studentId
+      });
+      toast.success("تم تخصيص الطالب للمعلم بنجاح");
+      fetchData();
+    } catch (error) {
+      console.error("Error assigning student:", error);
+      toast.error(error.response?.data?.detail || "حدث خطأ في تخصيص الطالب");
+    }
+  };
+
+  const handleRemoveStudent = async (teacherId, studentId) => {
+    try {
+      await axios.delete(`${API}/teacher-assignments`, {
+        data: { teacher_id: teacherId, student_id: studentId }
+      });
+      toast.success("تم إزالة تخصيص الطالب");
+      fetchData();
+    } catch (error) {
+      console.error("Error removing assignment:", error);
+      toast.error("حدث خطأ في إزالة التخصيص");
+    }
+  };
+
   const downloadQR = (studentId, studentName) => {
     const svg = document.getElementById(`qr-${studentId}`);
     if (!svg) return;
@@ -724,7 +825,7 @@ export default function AdminPage() {
     setTimeout(() => printWindow.print(), 500);
   };
 
-  // PIN Screen
+  // Login Screen
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#3d2b1f] to-[#5d4033]">
@@ -732,28 +833,43 @@ export default function AdminPage() {
           <CardContent className="p-8 text-center">
             <img src={LOGO_URL} alt="نادي بارع" className="h-20 w-20 rounded-full mx-auto mb-4 border-4 border-[#3d2b1f]" />
             <h2 className="text-xl font-bold text-[#3d2b1f] mb-2">لوحة تحكم المشرف</h2>
-            <p className="text-gray-500 text-sm mb-6">أدخل رمز الدخول للمتابعة</p>
-            <form onSubmit={handlePinSubmit}>
-              <Input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                data-testid="admin-pin-input"
-                value={pinInput}
-                onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
-                placeholder="رمز الدخول"
-                className={`text-center text-2xl tracking-[0.5em] mb-4 h-14 ${pinError ? 'border-red-500' : ''}`}
-                autoFocus
-              />
-              {pinError && (
-                <p className="text-red-500 text-sm mb-3" data-testid="pin-error">رمز الدخول غير صحيح</p>
+            <p className="text-gray-500 text-sm mb-6">أدخل بيانات الدخول للمتابعة</p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="text-right">
+                <Label htmlFor="username" className="text-sm text-gray-600 mb-1 block">اسم المستخدم</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  data-testid="admin-username-input"
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); setLoginError(""); }}
+                  placeholder="اسم المستخدم"
+                  className={`text-right h-12 ${loginError ? 'border-red-500' : ''}`}
+                  autoFocus
+                />
+              </div>
+              <div className="text-right">
+                <Label htmlFor="password" className="text-sm text-gray-600 mb-1 block">كلمة المرور</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  data-testid="admin-password-input"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setLoginError(""); }}
+                  placeholder="كلمة المرور"
+                  className={`text-right h-12 ${loginError ? 'border-red-500' : ''}`}
+                />
+              </div>
+              {loginError && (
+                <p className="text-red-500 text-sm" data-testid="login-error">{loginError}</p>
               )}
               <Button 
                 type="submit"
-                data-testid="admin-pin-submit"
-                className="w-full bg-[#3d2b1f] text-white hover:bg-[#5d4033] rounded-full h-12 text-lg"
+                data-testid="admin-login-submit"
+                disabled={isLoggingIn}
+                className="w-full bg-[#3d2b1f] text-white hover:bg-[#5d4033] rounded-full h-12 text-lg disabled:opacity-50"
               >
-                دخول
+                {isLoggingIn ? 'جاري الدخول...' : 'دخول'}
               </Button>
             </form>
           </CardContent>
@@ -896,7 +1012,7 @@ export default function AdminPage() {
         </Card>
 
         <Tabs defaultValue="students" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white/80 p-1 rounded-full border border-[#3d2b1f]/10">
+          <TabsList className="grid w-full grid-cols-5 mb-8 bg-white/80 p-1 rounded-full border border-[#3d2b1f]/10">
             <TabsTrigger 
               value="students" 
               data-testid="tab-students"
@@ -904,6 +1020,14 @@ export default function AdminPage() {
             >
               <Users className="w-4 h-4 ml-1" />
               الطلاب
+            </TabsTrigger>
+            <TabsTrigger 
+              value="teachers" 
+              data-testid="tab-teachers"
+              className="rounded-full data-[state=active]:bg-[#3d2b1f] data-[state=active]:text-white text-xs"
+            >
+              <School className="w-4 h-4 ml-1" />
+              المعلمين
             </TabsTrigger>
             <TabsTrigger 
               value="tasks" 
@@ -1453,6 +1577,243 @@ export default function AdminPage() {
                 );
               })}
             </div>
+          </TabsContent>
+
+          {/* Teachers Tab */}
+          <TabsContent value="teachers">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <h2 className="text-2xl font-bold text-[#3d2b1f] flex items-center gap-2">
+                <School className="w-6 h-6" />
+                معلمي القرآن ({teachers.length})
+              </h2>
+              
+              <Dialog open={addTeacherDialogOpen} onOpenChange={setAddTeacherDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="bg-[#3d2b1f] text-white hover:bg-[#5d4033] rounded-full"
+                  >
+                    <Plus className="w-4 h-4 ml-2" />
+                    إضافة معلم
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md bg-white">
+                  <DialogHeader>
+                    <DialogTitle>إضافة معلم جديد</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <Label htmlFor="teacher-name">اسم المعلم *</Label>
+                      <Input
+                        id="teacher-name"
+                        value={newTeacher.name}
+                        onChange={(e) => setNewTeacher(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="أدخل اسم المعلم"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="teacher-username">اسم المستخدم *</Label>
+                      <Input
+                        id="teacher-username"
+                        value={newTeacher.username}
+                        onChange={(e) => setNewTeacher(prev => ({ ...prev, username: e.target.value }))}
+                        placeholder="اسم المستخدم للدخول"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="teacher-password">كلمة المرور *</Label>
+                      <Input
+                        id="teacher-password"
+                        type="password"
+                        value={newTeacher.password}
+                        onChange={(e) => setNewTeacher(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="كلمة المرور"
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleAddTeacher}
+                      className="w-full bg-[#3d2b1f] text-white hover:bg-[#5d4033] rounded-full"
+                    >
+                      إضافة المعلم
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {teachers.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <School className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                <p className="text-lg">لا يوجد معلمين مسجلين</p>
+                <p className="text-sm">أضف معلمين للبدء</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teachers.map((teacher) => {
+                  const assignedStudents = teacherAssignments[teacher.id] || [];
+                  const canAssignMore = assignedStudents.length < 3;
+                  
+                  return (
+                    <Card key={teacher.id} className="bg-white overflow-hidden">
+                      <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100 pb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xl">
+                              {teacher.name.charAt(0)}
+                            </div>
+                            <div>
+                              <CardTitle className="text-emerald-800 text-lg">{teacher.name}</CardTitle>
+                              <p className="text-sm text-gray-500">@{teacher.username}</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleDeleteTeacher(teacher.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-gray-700 flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            الطلاب المخصصين ({assignedStudents.length}/3)
+                          </h4>
+                          {canAssignMore && (
+                            <Dialog 
+                              open={assignStudentDialogOpen && selectedTeacherForAssign === teacher.id}
+                              onOpenChange={(open) => {
+                                setAssignStudentDialogOpen(open);
+                                if (open) setSelectedTeacherForAssign(teacher.id);
+                              }}
+                            >
+                              <DialogTrigger asChild>
+                                <Button 
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedTeacherForAssign(teacher.id)}
+                                  className="rounded-full text-xs"
+                                >
+                                  <Plus className="w-3 h-3 ml-1" />
+                                  إضافة طالب
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md bg-white">
+                                <DialogHeader>
+                                  <DialogTitle>تخصيص طالب للمعلم {teacher.name}</DialogTitle>
+                                </DialogHeader>
+                                <div className="mt-4 max-h-80 overflow-y-auto space-y-2">
+                                  {students.filter(s => !assignedStudents.some(as => as.id === s.id)).length === 0 ? (
+                                    <p className="text-center text-gray-400 py-4">لا يوجد طلاب متاحين</p>
+                                  ) : (
+                                    students
+                                      .filter(s => !assignedStudents.some(as => as.id === s.id))
+                                      .map(student => {
+                                        const team = getTeamById(student.team);
+                                        return (
+                                          <div 
+                                            key={student.id}
+                                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                                          >
+                                            <div className="flex items-center gap-3">
+                                              {student.photo ? (
+                                                <img 
+                                                  src={student.photo} 
+                                                  alt={student.name}
+                                                  className="w-10 h-10 rounded-full object-cover"
+                                                />
+                                              ) : (
+                                                <div 
+                                                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                                                  style={{ backgroundColor: team?.color || '#3d2b1f' }}
+                                                >
+                                                  {student.name.charAt(0)}
+                                                </div>
+                                              )}
+                                              <div>
+                                                <p className="font-medium">{student.name}</p>
+                                                <Badge style={{ backgroundColor: team?.bg, color: team?.color }}>
+                                                  {team?.emoji} {team?.name}
+                                                </Badge>
+                                              </div>
+                                            </div>
+                                            <Button 
+                                              size="sm"
+                                              onClick={() => {
+                                                handleAssignStudent(teacher.id, student.id);
+                                                setAssignStudentDialogOpen(false);
+                                              }}
+                                              className="rounded-full bg-emerald-600 hover:bg-emerald-700"
+                                            >
+                                              <Plus className="w-4 h-4" />
+                                            </Button>
+                                          </div>
+                                        );
+                                      })
+                                  )}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                        </div>
+                        
+                        {assignedStudents.length === 0 ? (
+                          <p className="text-gray-400 text-center py-4">لا يوجد طلاب مخصصين</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {assignedStudents.map((student) => {
+                              const team = getTeamById(student.team);
+                              return (
+                                <div 
+                                  key={student.id}
+                                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    {student.photo ? (
+                                      <img 
+                                        src={student.photo} 
+                                        alt={student.name}
+                                        className="w-8 h-8 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div 
+                                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                                        style={{ backgroundColor: team?.color || '#3d2b1f' }}
+                                      >
+                                        {student.name.charAt(0)}
+                                      </div>
+                                    )}
+                                    <div>
+                                      <p className="font-medium text-sm">{student.name}</p>
+                                      <Badge className="text-xs" style={{ backgroundColor: team?.bg, color: team?.color }}>
+                                        {team?.emoji}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => handleRemoveStudent(teacher.id, student.id)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 rounded-full"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           {/* Tasks Tab */}
