@@ -1,4 +1,4 @@
-/* Ghiras Club Styles */
+/* New Theme Styles - Purple/Violet/Indigo */
 
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
@@ -41,23 +41,23 @@ tr {
   transition: all 0.3s ease;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Purple theme */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f3f0ff;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #10b981;
+  background: #8b5cf6;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #059669;
+  background: #7c3aed;
 }
 
 /* Responsive text */

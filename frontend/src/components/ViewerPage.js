@@ -8,7 +8,7 @@ const StudentAvatar = ({ student, size = "w-10 h-10", textSize = "text-sm" }) =>
   if (student.image_url) {
     return <img src={student.image_url} alt="" className={`${size} rounded-full object-cover border-2 border-white shadow-sm`} />;
   }
-  return <div className={`${size} rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center ${textSize} font-bold text-white shadow-sm`}>{student.name?.charAt(0)}</div>;
+  return <div className={`${size} rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center ${textSize} font-bold text-white shadow-sm`}>{student.name?.charAt(0)}</div>;
 };
 
 function ViewerPage({ token }) {
@@ -47,7 +47,7 @@ function ViewerPage({ token }) {
     fetchAll();
   }, [token]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-xl bg-gradient-to-br from-green-50 to-emerald-50">⏳ جاري التحميل...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-xl bg-gradient-to-br from-violet-50 to-purple-50">⏳ جاري التحميل...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-xl text-red-600">❌ {error}</div>;
 
   const top10 = [...students].sort((a, b) => b.points - a.points).slice(0, 10);
@@ -58,12 +58,12 @@ function ViewerPage({ token }) {
   const rankMedals = ["🥇", "🥈", "🥉"];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 pb-8" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 pb-8" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-5 shadow-lg">
+      <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white py-5 shadow-lg">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-2xl font-bold">🌱 نادي غِراس</h1>
-          <p className="text-green-100 mt-1">👋 مرحباً {viewerName} - وضع المشاهدة</p>
+          <h1 className="text-2xl font-bold">� نادي غِراس</h1>
+          <p className="text-violet-100 mt-1">👋 مرحباً {viewerName} - وضع المشاهدة</p>
         </div>
       </div>
 
@@ -85,9 +85,9 @@ function ViewerPage({ token }) {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-green-100">
+          <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-violet-100">
             <p className="text-2xl">👥</p>
-            <div className="text-xl font-bold text-green-600">{students.length}</div>
+            <div className="text-xl font-bold text-violet-600">{students.length}</div>
             <div className="text-xs text-gray-500">طالب</div>
           </div>
           <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-blue-100">
@@ -112,8 +112,8 @@ function ViewerPage({ token }) {
               <div key={s.id} className={`flex items-center gap-3 p-3 hover:bg-gray-50 transition ${i < 3 ? "bg-yellow-50/50" : ""}`}>
                 <span className="text-lg w-7 text-center">{i < 3 ? rankMedals[i] : <span className="text-gray-400 text-sm font-bold">{i + 1}</span>}</span>
                 <StudentAvatar student={s} />
-                <Link to={`/public/${s.id}`} className="font-semibold text-gray-800 hover:text-green-600 text-sm flex-1">{s.name}</Link>
-                <span className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">{s.points} ⭐</span>
+                <Link to={`/public/${s.id}`} className="font-semibold text-gray-800 hover:text-violet-600 text-sm flex-1">{s.name}</Link>
+                <span className="bg-gradient-to-r from-violet-100 to-purple-100 text-violet-700 px-3 py-1 rounded-full text-sm font-bold">{s.points} ⭐</span>
               </div>
             ))}
           </div>
@@ -121,8 +121,8 @@ function ViewerPage({ token }) {
 
         {/* League Standings */}
         {standings.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-green-100">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-3">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-violet-100">
+            <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white p-3">
               <h2 className="font-bold text-center text-sm">⚽ جدول الدوري الكروي</h2>
             </div>
             <div className="overflow-x-auto">
@@ -146,12 +146,12 @@ function ViewerPage({ token }) {
                       <td className="p-2 text-center">{i === 0 ? "🥇" : i + 1}</td>
                       <td className="p-2 font-semibold">{t.team}</td>
                       <td className="p-2 text-center">{t.played}</td>
-                      <td className="p-2 text-center text-green-600">{t.won}</td>
+                      <td className="p-2 text-center text-violet-600">{t.won}</td>
                       <td className="p-2 text-center text-yellow-600">{t.drawn}</td>
                       <td className="p-2 text-center text-red-600">{t.lost}</td>
                       <td className="p-2 text-center">{t.gf}</td>
                       <td className="p-2 text-center">{t.ga}</td>
-                      <td className="p-2 text-center font-bold text-green-600">{t.points}</td>
+                      <td className="p-2 text-center font-bold text-violet-600">{t.points}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -187,9 +187,9 @@ function ViewerPage({ token }) {
             <div className="divide-y divide-gray-100">
               {playedMatches.map(m => (
                 <div key={m.id} className="flex items-center justify-center gap-3 p-3">
-                  <span className={`font-bold text-sm flex-1 text-left ${m.score1 > m.score2 ? "text-green-600" : m.score1 < m.score2 ? "text-red-500" : "text-gray-700"}`}>{m.team1}</span>
-                  <span className="bg-green-600 text-white px-3 py-1 rounded-lg font-bold text-sm min-w-[60px] text-center">{m.score1} - {m.score2}</span>
-                  <span className={`font-bold text-sm flex-1 text-right ${m.score2 > m.score1 ? "text-green-600" : m.score2 < m.score1 ? "text-red-500" : "text-gray-700"}`}>{m.team2}</span>
+                  <span className={`font-bold text-sm flex-1 text-left ${m.score1 > m.score2 ? "text-violet-600" : m.score1 < m.score2 ? "text-red-500" : "text-gray-700"}`}>{m.team1}</span>
+                  <span className="bg-violet-600 text-white px-3 py-1 rounded-lg font-bold text-sm min-w-[60px] text-center">{m.score1} - {m.score2}</span>
+                  <span className={`font-bold text-sm flex-1 text-right ${m.score2 > m.score1 ? "text-violet-600" : m.score2 < m.score1 ? "text-red-500" : "text-gray-700"}`}>{m.team2}</span>
                 </div>
               ))}
             </div>
@@ -229,8 +229,8 @@ function ViewerPage({ token }) {
         {supervisors.map(sup => {
           const groupStudents = students.filter(s => s.supervisor === sup);
           return (
-            <div key={sup} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-teal-100">
-              <div className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white p-3 flex items-center justify-between">
+            <div key={sup} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-purple-100">
+              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white p-3 flex items-center justify-between">
                 <h3 className="font-bold text-sm">🏅 {sup}</h3>
                 <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{groupStudents.length} طالب</span>
               </div>
@@ -239,8 +239,8 @@ function ViewerPage({ token }) {
                   <div key={s.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 transition">
                     <span className="text-gray-400 text-xs w-5 text-center">{i + 1}</span>
                     <StudentAvatar student={s} size="w-9 h-9" />
-                    <Link to={`/public/${s.id}`} className="font-semibold text-gray-800 hover:text-green-600 text-sm flex-1">{s.name}</Link>
-                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-bold">{s.points} ⭐</span>
+                    <Link to={`/public/${s.id}`} className="font-semibold text-gray-800 hover:text-violet-600 text-sm flex-1">{s.name}</Link>
+                    <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-xs font-bold">{s.points} ⭐</span>
                   </div>
                 ))}
               </div>
