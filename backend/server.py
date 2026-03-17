@@ -214,6 +214,31 @@ class HalaqaGradeCreate(BaseModel):
     mutun: int = 0
     notes: str = ""
 
+# ==================== Attendance Models ====================
+
+class AttendanceSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    date: str = Field(default_factory=lambda: date.today().isoformat())
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ended_at: Optional[datetime] = None
+    is_active: bool = True
+    created_by: str = "admin"
+
+class AttendanceScan(BaseModel):
+    student_id: str
+    barcode: str
+
+class AttendanceRecord(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    student_id: str
+    student_name: str
+    barcode: str
+    status: str  # "early", "late", "absent"
+    points: int
+    scanned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_late_period: bool = False
+
 # ==================== Student Endpoints ====================
 
 @api_router.get("/students", response_model=List[Student])
@@ -762,6 +787,217 @@ async def delete_halaqa_grade(grade_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="غير موجود")
     return {"deleted": True}
+
+# ==================== Attendance Endpoints ====================
+
+@api_router.post("/attendance/start", response_model=AttendanceSession)
+async def start_attendance_session():
+    """Start a new attendance session for today"""
+    today = date.today().isoformat()
+    
+    # Check if there's already an active session for today
+    existing = await db.attendance_sessions.find_one({"date": today, "is_active": True}, {"_id": 0})
+    if existing:
+        # Return existing session
+        if isinstance(existing.get("started_at"), str):
+            existing["started_at"] = datetime.fromisoformat(existing["started_at"])
+        return existing
+    
+    # Create new session
+    session = AttendanceSession()
+    doc = session.model_dump()
+    doc["started_at"] = doc["started_at"].isoformat()
+    await db.attendance_sessions.insert_one(doc)
+    return session
+
+@api_router.post("/attendance/{session_id}/stop")
+async def stop_attendance_session(session_id: str):
+    """Stop the attendance session (marks the start of late period)"""
+    session = await db.attendance_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="جلسة الحضور غير موجودة")
+    
+    ended_at = datetime.now(timezone.utc)
+    await db.attendance_sessions.update_one(
+        {"id": session_id},
+        {"$set": {"ended_at": ended_at.isoformat(), "is_active": False}}
+    )
+    
+    return {"success": True, "message": "تم إيقاف المؤقت - بداية فترة التأخير", "ended_at": ended_at.isoformat()}
+
+@api_router.post("/attendance/{session_id}/scan")
+async def scan_student_barcode(session_id: str, data: AttendanceScan):
+    """Scan a student's barcode and record attendance"""
+    session = await db.attendance_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="جلسة الحضور غير موجودة")
+    
+    # Find student by ID
+    student = await db.students.find_one({"id": data.student_id}, {"_id": 0})
+    if not student:
+        raise HTTPException(status_code=404, detail="الطالب غير موجود")
+    
+    # Check if already scanned today
+    today = date.today().isoformat()
+    existing_record = await db.attendance_records.find_one({
+        "session_id": session_id,
+        "student_id": data.student_id,
+        "scanned_at": {"$gte": today}
+    }, {"_id": 0})
+    
+    if existing_record:
+        return {"success": False, "message": "تم تسجيل حضور هذا الطالب مسبقاً", "already_scanned": True}
+    
+    # Determine if late period (session is not active = late period started)
+    is_late_period = not session.get("is_active", True)
+    
+    # Determine status and points
+    if is_late_period:
+        status = "late"
+        points = -10  # Deduct 10 points for being late
+        reason = "حضور متأخر"
+    else:
+        status = "early"
+        points = 20  # Add 20 points for early attendance
+        reason = "حضور مبكر"
+    
+    # Create attendance record
+    record = AttendanceRecord(
+        session_id=session_id,
+        student_id=data.student_id,
+        student_name=student["name"],
+        barcode=data.barcode,
+        status=status,
+        points=points,
+        is_late_period=is_late_period
+    )
+    doc = record.model_dump()
+    doc["scanned_at"] = doc["scanned_at"].isoformat()
+    await db.attendance_records.insert_one(doc)
+    
+    # Update student points
+    await db.students.update_one({"id": data.student_id}, {"$inc": {"points": points}})
+    
+    # Log points
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "student_id": data.student_id,
+        "points": points,
+        "reason": reason,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.points_log.insert_one(log_entry)
+    
+    return {
+        "success": True,
+        "student": student,
+        "status": status,
+        "points": points,
+        "is_late_period": is_late_period
+    }
+
+@api_router.post("/attendance/{session_id}/finalize")
+async def finalize_attendance_session(session_id: str):
+    """Finalize attendance - mark absent students and deduct points"""
+    session = await db.attendance_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="جلسة الحضور غير موجودة")
+    
+    today = date.today().isoformat()
+    
+    # Get all students
+    all_students = await db.students.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    
+    # Get already scanned students
+    scanned_records = await db.attendance_records.find({"session_id": session_id}, {"_id": 0}).to_list(1000)
+    scanned_student_ids = {r["student_id"] for r in scanned_records}
+    
+    absent_count = 0
+    # Process absent students
+    for student in all_students:
+        if student["id"] not in scanned_student_ids:
+            # Create absent record
+            absent_record = AttendanceRecord(
+                session_id=session_id,
+                student_id=student["id"],
+                student_name=student["name"],
+                barcode="",
+                status="absent",
+                points=-30,  # Deduct 30 points for absence
+                is_late_period=False
+            )
+            doc = absent_record.model_dump()
+            doc["scanned_at"] = doc["scanned_at"].isoformat()
+            await db.attendance_records.insert_one(doc)
+            
+            # Deduct points
+            await db.students.update_one({"id": student["id"]}, {"$inc": {"points": -30}})
+            
+            # Log points
+            log_entry = {
+                "id": str(uuid.uuid4()),
+                "student_id": student["id"],
+                "points": -30,
+                "reason": "غياب",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.points_log.insert_one(log_entry)
+            absent_count += 1
+    
+    # Mark session as finalized
+    await db.attendance_sessions.update_one(
+        {"id": session_id},
+        {"$set": {"is_finalized": True, "finalized_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {
+        "success": True,
+        "absent_count": absent_count,
+        "present_count": len(scanned_records),
+        "total_students": len(all_students)
+    }
+
+@api_router.get("/attendance/today")
+async def get_today_attendance():
+    """Get today's attendance session and records"""
+    today = date.today().isoformat()
+    
+    session = await db.attendance_sessions.find_one({"date": today}, {"_id": 0})
+    if not session:
+        return {"session": None, "records": []}
+    
+    # Convert datetime strings
+    if isinstance(session.get("started_at"), str):
+        session["started_at"] = datetime.fromisoformat(session["started_at"])
+    if isinstance(session.get("ended_at"), str):
+        session["ended_at"] = datetime.fromisoformat(session["ended_at"])
+    
+    records = await db.attendance_records.find({"session_id": session["id"]}, {"_id": 0}).to_list(1000)
+    for r in records:
+        if isinstance(r.get("scanned_at"), str):
+            r["scanned_at"] = datetime.fromisoformat(r["scanned_at"])
+    
+    return {"session": session, "records": records}
+
+@api_router.get("/attendance/{session_id}/stats")
+async def get_attendance_stats(session_id: str):
+    """Get attendance statistics for a session"""
+    session = await db.attendance_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="جلسة الحضور غير موجودة")
+    
+    records = await db.attendance_records.find({"session_id": session_id}, {"_id": 0}).to_list(1000)
+    
+    early_count = sum(1 for r in records if r["status"] == "early")
+    late_count = sum(1 for r in records if r["status"] == "late")
+    absent_count = sum(1 for r in records if r["status"] == "absent")
+    
+    return {
+        "early": early_count,
+        "late": late_count,
+        "absent": absent_count,
+        "total": len(records)
+    }
 
 # ==================== Health Check ====================
 

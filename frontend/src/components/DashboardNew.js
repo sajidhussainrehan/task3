@@ -8,6 +8,7 @@ import TasksManager from "./TasksManager";
 import LeagueStarManager from "./LeagueStarManager";
 import ViewerLinksManager from "./ViewerLinksManager";
 import GroupsManager from "./GroupsManager";
+import AttendanceManager from "./AttendanceManager";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -164,6 +165,7 @@ function Dashboard({ onLogout }) {
   const sections = [
     { id: "groups", label: "المجموعات", icon: "🏅" },
     { id: "students", label: "الطلاب", icon: "👥" },
+    { id: "attendance", label: "الحضور", icon: "📱" },
     { id: "tasks", label: "المهام", icon: "📋" },
     { id: "league", label: "الدوري", icon: "⚽" },
     { id: "star", label: "نجم الدوري", icon: "⭐" },
