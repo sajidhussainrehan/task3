@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API_BASE = process.env.REACT_APP_BACKEND_URL?.replace(/\/+$/, "") || "";
+const API = `${API_BASE}/api`;
 
 const StudentAvatar = ({ student, size = "w-10 h-10", textSize = "text-sm" }) => {
   if (student.image_url) {
