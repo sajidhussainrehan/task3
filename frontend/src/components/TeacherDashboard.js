@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
-const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 function TeacherDashboard({ onLogout }) {
   const [students, setStudents] = useState([]);
@@ -89,16 +88,16 @@ function TeacherDashboard({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black py-4 shadow-lg border-b-4 border-black">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white py-4 shadow-lg">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-black">📚 لوحة تحكم معلم حلقة القرآن</h1>
-              <p className="text-green-900 text-sm">🎓 تقييم حلقة القرآن</p>
+              <h1 className="text-2xl font-bold">📚 لوحة تحكم معلم حلقة القرآن</h1>
+              <p className="text-emerald-100 text-sm">🎓 تقييم حلقة القرآن</p>
             </div>
-            <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-lime-400 px-4 py-2 rounded-lg text-sm font-semibold border-2 border-lime-400">
+            <button onClick={onLogout} className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-semibold">
               🚪 خروج
             </button>
           </div>
@@ -108,7 +107,7 @@ function TeacherDashboard({ onLogout }) {
       {/* Message */}
       {message && (
         <div className="container mx-auto px-4 mt-4">
-          <div className="bg-white border-r-4 border-lime-500 text-green-700 p-3 rounded-lg shadow text-center font-semibold">
+          <div className="bg-white border-r-4 border-emerald-500 text-emerald-700 p-3 rounded-lg shadow text-center font-semibold">
             {message}
           </div>
         </div>
@@ -117,14 +116,14 @@ function TeacherDashboard({ onLogout }) {
       <div className="container mx-auto px-4 py-6">
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-white rounded-xl p-4 text-center shadow-lg border border-lime-100">
+          <div className="bg-white rounded-xl p-4 text-center shadow-lg border border-emerald-100">
             <p className="text-2xl">👨‍🎓</p>
-            <div className="text-2xl font-bold text-lime-600">{students.length}</div>
+            <div className="text-2xl font-bold text-emerald-600">{students.length}</div>
             <div className="text-xs text-gray-500">عدد الطلاب</div>
           </div>
-          <div className="bg-white rounded-xl p-4 text-center shadow-lg border border-green-100">
+          <div className="bg-white rounded-xl p-4 text-center shadow-lg border border-teal-100">
             <p className="text-2xl">🏆</p>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-teal-600">
               {students.length > 0 ? students.sort((a, b) => b.points - a.points)[0].name : "-"}
             </div>
             <div className="text-xs text-gray-500">المتصدر</div>
@@ -133,19 +132,19 @@ function TeacherDashboard({ onLogout }) {
 
         {/* Students List */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black p-3 border-b-2 border-black">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-4">
             <h2 className="text-lg font-bold">📋 قائمة الطلاب</h2>
-            <p className="text-green-900 text-xs">اختر طالباً لإدخال درجات</p>
+            <p className="text-emerald-100 text-xs">اختر طالباً لإدخال درجات</p>
           </div>
           <div className="p-4 space-y-3">
             {students.sort((a, b) => b.points - a.points).map((student, index) => (
-              <div key={student.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-lime-300 transition">
+              <div key={student.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-emerald-300 transition">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-lime-100 text-green-700 flex items-center justify-center font-bold text-sm">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
                     {index + 1}
                   </div>
                   {student.image_url ? (
-                    <img src={student.image_url} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-lime-200" />
+                    <img src={student.image_url} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-emerald-200" />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-lg">
                       {student.name.charAt(0)}
@@ -158,14 +157,14 @@ function TeacherDashboard({ onLogout }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-center">
-                    <span className="bg-lime-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">
+                    <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-bold">
                       {student.points} ⭐
                     </span>
                     <p className="text-xs text-gray-400 mt-1">النقاط</p>
                   </div>
                   <button
                     onClick={() => openGradeModal(student)}
-                    className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold"
                   >
                     📝 تقييم
                   </button>
@@ -182,9 +181,9 @@ function TeacherDashboard({ onLogout }) {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} dir="rtl">
             <div className="flex items-center gap-3 mb-4">
               {selectedStudent.image_url ? (
-                <img src={selectedStudent.image_url} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-lime-300" />
+                <img src={selectedStudent.image_url} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-emerald-300" />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-lime-100 text-green-700 flex items-center justify-center font-bold text-xl">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xl">
                   {selectedStudent.name.charAt(0)}
                 </div>
               )}
@@ -203,7 +202,7 @@ function TeacherDashboard({ onLogout }) {
                   max="100"
                   value={memorization}
                   onChange={e => setMemorization(e.target.value)}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
+                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-emerald-500"
                   placeholder="أدخل الدرجة"
                   required
                 />
@@ -216,7 +215,7 @@ function TeacherDashboard({ onLogout }) {
                   max="100"
                   value={revision}
                   onChange={e => setRevision(e.target.value)}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
+                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-emerald-500"
                   placeholder="أدخل الدرجة"
                   required
                 />
@@ -229,7 +228,7 @@ function TeacherDashboard({ onLogout }) {
                   max="100"
                   value={mutun}
                   onChange={e => setMutun(e.target.value)}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
+                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-emerald-500"
                   placeholder="أدخل الدرجة"
                   required
                 />
@@ -239,20 +238,20 @@ function TeacherDashboard({ onLogout }) {
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
+                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-emerald-500"
                   placeholder="أي ملاحظات على الطالب..."
                   rows="2"
                 />
               </div>
 
-              <div className="bg-lime-50 p-3 rounded-lg">
-                <p className="text-sm text-green-800 text-center">
+              <div className="bg-emerald-50 p-3 rounded-lg">
+                <p className="text-sm text-emerald-800 text-center">
                   📊 مجموع النقاط: <span className="font-bold">{(parseInt(memorization) || 0) + (parseInt(revision) || 0) + (parseInt(mutun) || 0)}</span>
                 </p>
               </div>
 
               <div className="flex gap-3">
-                <button type="submit" className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold border-2 border-black">
+                <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold">
                   💾 حفظ الدرجات
                 </button>
                 <button type="button" onClick={() => setShowGradeModal(false)} className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-bold">

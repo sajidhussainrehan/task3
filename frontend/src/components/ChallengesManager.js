@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
-const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 function ChallengesManager() {
   const headers = {};
@@ -83,7 +83,7 @@ function ChallengesManager() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black py-6 shadow-lg border-b-4 border-black">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-6 shadow-lg">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-2">
             <Link
@@ -97,7 +97,7 @@ function ChallengesManager() {
               <span className="text-4xl">🎯</span>
             </h1>
           </div>
-          <p className="text-center text-green-900 text-base">أسئلة تفاعلية مع نقاط مكافأة</p>
+          <p className="text-center text-purple-100 text-base">أسئلة تفاعلية مع نقاط مكافأة</p>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ function ChallengesManager() {
         <div className="mb-6 text-center">
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-black px-8 py-3 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl transition-all border-2 border-black"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl transition-all"
           >
             ➕ إضافة منافسة جديدة
           </button>
@@ -131,7 +131,7 @@ function ChallengesManager() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-800 mb-2">{challenge.question}</h3>
-                  <div className="bg-lime-100 text-green-800 px-3 py-1 rounded-full text-sm inline-block border border-green-300">
+                  <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm inline-block">
                     {challenge.points} نقطة
                   </div>
                 </div>
@@ -196,7 +196,7 @@ function ChallengesManager() {
                   <textarea
                     value={newChallenge.question}
                     onChange={(e) => setNewChallenge({ ...newChallenge, question: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                     placeholder="اكتب السؤال هنا"
                     rows="3"
                     required
@@ -222,7 +222,7 @@ function ChallengesManager() {
                           newOptions[index] = e.target.value;
                           setNewChallenge({ ...newChallenge, options: newOptions });
                         }}
-                        className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                        className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                         placeholder={`الخيار ${index + 1}`}
                         required
                       />
@@ -237,7 +237,7 @@ function ChallengesManager() {
                     type="number"
                     value={newChallenge.points}
                     onChange={(e) => setNewChallenge({ ...newChallenge, points: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                     placeholder="عدد النقاط"
                     min="1"
                     required
@@ -249,7 +249,7 @@ function ChallengesManager() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-lime-500 hover:bg-lime-600 text-black px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50 border-2 border-black"
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50"
                 >
                   {loading ? "جاري الإضافة..." : "إضافة"}
                 </button>

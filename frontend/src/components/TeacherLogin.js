@@ -1,8 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
-const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 function TeacherLogin({ onLogin }) {
   const [password, setPassword] = useState("");
@@ -26,10 +25,10 @@ function TeacherLogin({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50 flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 flex items-center justify-center p-4" dir="rtl">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-lime-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-black">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-4xl">📚</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-800">معلم حلقة القرآن</h1>
@@ -49,7 +48,7 @@ function TeacherLogin({ onLogin }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500 text-center"
+              className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-emerald-500 text-center"
               placeholder="أدخل كلمة المرور"
               required
             />
@@ -58,14 +57,14 @@ function TeacherLogin({ onLogin }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold transition disabled:opacity-50 border-2 border-black"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold transition disabled:opacity-50"
           >
             {loading ? "⏳ جاري الدخول..." : "🔓 دخول"}
           </button>
         </form>
 
-        <div className="mt-6 p-4 bg-lime-50 rounded-lg border border-lime-200">
-          <p className="text-green-800 text-sm">👨‍🏫 وصول معلم حلقة لإدخال الدرجات</p>
+        <div className="mt-6 p-4 bg-emerald-50 rounded-lg">
+          <p className="text-emerald-100 text-sm">👨‍🏫 وصول معلم حلقة لإدخال الدرجات</p>
         </div>
       </div>
 
@@ -75,7 +74,7 @@ function TeacherLogin({ onLogin }) {
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
           </svg>
-          <span className="text-xs font-medium text-gray-500 group-hover:text-lime-600">دخول معلم </span>
+          <span className="text-xs font-medium text-gray-500 group-hover:text-emerald-600">دخول معلم </span>
         </a>
       </div>
     </div>

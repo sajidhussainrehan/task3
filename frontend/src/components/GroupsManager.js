@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL?.replace(/\/+$/, "") || "";
-const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const GROUP_COLORS = [
-  "from-lime-500 to-green-600",
-  "from-emerald-500 to-teal-600",
+  "from-blue-500 to-blue-600",
+  "from-emerald-500 to-emerald-600",
+  "from-purple-500 to-purple-600",
   "from-orange-500 to-orange-600",
   "from-pink-500 to-pink-600",
-  "from-cyan-500 to-cyan-600",
+  "from-teal-500 to-teal-600",
   "from-red-500 to-red-600",
   "from-indigo-500 to-indigo-600",
 ];
@@ -73,9 +73,9 @@ function GroupsManager({ onGroupsChange }) {
 
   return (
     <div className="space-y-4">
-      {message && <div className="bg-lime-100 text-green-700 p-3 rounded-lg text-center font-semibold border border-lime-300">{message}</div>}
+      {message && <div className="bg-green-100 text-green-700 p-3 rounded-lg text-center font-semibold">{message}</div>}
 
-      <button onClick={() => { setShowAdd(true); setName(""); }} className="w-full bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-xl font-bold text-sm border-2 border-black" data-testid="add-group-btn">
+      <button onClick={() => { setShowAdd(true); setName(""); }} className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm" data-testid="add-group-btn">
         ➕ إضافة مجموعة جديدة
       </button>
 
@@ -101,7 +101,7 @@ function GroupsManager({ onGroupsChange }) {
                   <p className="text-xs text-gray-500">طالب في المجموعة</p>
                 </div>
               </div>
-              <div className="bg-lime-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold border border-green-300">
+              <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">
                 ⚽ فريق كرة القدم
               </div>
             </div>
@@ -126,10 +126,10 @@ function GroupsManager({ onGroupsChange }) {
               <div>
                 <label className="block text-sm font-semibold mb-1">اسم المجموعة</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="مثال: فريق النخبة" required data-testid="group-name-input" />
+                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" placeholder="مثال: فريق النخبة" required data-testid="group-name-input" />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold disabled:opacity-50 border-2 border-black" data-testid="submit-group">
+                <button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold disabled:opacity-50" data-testid="submit-group">
                   {loading ? "جاري الحفظ..." : editGroup ? "تحديث" : "إضافة"}
                 </button>
                 <button type="button" onClick={() => { setShowAdd(false); setEditGroup(null); }} className="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-3 rounded-lg font-bold">إلغاء</button>

@@ -104,7 +104,7 @@ function PointsModal({ student, onClose, onUpdatePoints, loading }) {
             onClick={() => setCustomMode(true)}
             className={`flex-1 py-3 px-4 font-bold transition-colors ${
               customMode
-                ? "bg-lime-50 text-green-700 border-b-2 border-lime-500"
+                ? "bg-purple-50 text-purple-700 border-b-2 border-purple-500"
                 : "text-gray-600 hover:bg-gray-50"
             }`}
             data-testid="custom-tab"
@@ -155,7 +155,7 @@ function PointsModal({ student, onClose, onUpdatePoints, loading }) {
                   type="number"
                   value={customPoints}
                   onChange={(e) => setCustomPoints(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                   placeholder="أدخل عدد النقاط (موجب أو سالب)"
                   required
                   data-testid="custom-points-input"
@@ -170,7 +170,7 @@ function PointsModal({ student, onClose, onUpdatePoints, loading }) {
                   type="text"
                   value={customReason}
                   onChange={(e) => setCustomReason(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
                   placeholder="مثال: فوز في مسابقة"
                   required
                   data-testid="custom-reason-input"
@@ -179,7 +179,7 @@ function PointsModal({ student, onClose, onUpdatePoints, loading }) {
               <button
                 type="submit"
                 disabled={loading || !customPoints || !customReason.trim()}
-                className="w-full bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold transition-all disabled:opacity-50 border-2 border-black"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-50"
                 data-testid="custom-submit-btn"
               >
                 {loading ? "جاري التطبيق..." : "تطبيق النقاط"}

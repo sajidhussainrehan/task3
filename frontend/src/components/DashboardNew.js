@@ -8,18 +8,16 @@ import TasksManager from "./TasksManager";
 import LeagueStarManager from "./LeagueStarManager";
 import ViewerLinksManager from "./ViewerLinksManager";
 import GroupsManager from "./GroupsManager";
-import AttendanceManager from "./AttendanceManager";
 
-const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
-const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const SUPERVISOR_COLORS = [
-  { bg: "bg-lime-100", text: "text-lime-700", border: "border-lime-400", gradient: "from-lime-500 to-lime-600" },
-  { bg: "bg-green-100", text: "text-green-700", border: "border-green-400", gradient: "from-green-500 to-green-600" },
+  { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-400", gradient: "from-blue-500 to-blue-600" },
   { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-400", gradient: "from-emerald-500 to-emerald-600" },
+  { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-400", gradient: "from-purple-500 to-purple-600" },
+  { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-400", gradient: "from-orange-500 to-orange-600" },
+  { bg: "bg-pink-100", text: "text-pink-700", border: "border-pink-400", gradient: "from-pink-500 to-pink-600" },
   { bg: "bg-teal-100", text: "text-teal-700", border: "border-teal-400", gradient: "from-teal-500 to-teal-600" },
-  { bg: "bg-cyan-100", text: "text-cyan-700", border: "border-cyan-400", gradient: "from-cyan-500 to-cyan-600" },
-  { bg: "bg-green-100", text: "text-green-700", border: "border-green-400", gradient: "from-green-500 to-green-600" },
 ];
 
 function Dashboard({ onLogout }) {
@@ -166,7 +164,6 @@ function Dashboard({ onLogout }) {
   const sections = [
     { id: "groups", label: "المجموعات", icon: "🏅" },
     { id: "students", label: "الطلاب", icon: "👥" },
-    { id: "attendance", label: "الحضور", icon: "📱" },
     { id: "tasks", label: "المهام", icon: "📋" },
     { id: "league", label: "الدوري", icon: "⚽" },
     { id: "star", label: "نجم الدوري", icon: "⭐" },
@@ -174,18 +171,18 @@ function Dashboard({ onLogout }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black py-4 shadow-lg border-b-4 border-black">
+      <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-4 shadow-lg">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-black">🌟 بارع</h1>
-              <p className="text-green-900 text-sm">🎯 لوحة تحكم المشرف</p>
+              <h1 className="text-2xl font-bold">🌱 نادي غِراس</h1>
+              <p className="text-green-100 text-sm">🎯 لوحة تحكم المشرف</p>
             </div>
             <div className="flex gap-2">
-              <Link to="/challenges" className="bg-black hover:bg-gray-800 text-lime-400 px-3 py-2 rounded-lg text-sm font-semibold border-2 border-lime-400" data-testid="challenges-link">🏆 المنافسات</Link>
-              <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-semibold border-2 border-white" data-testid="logout-btn">🚪 خروج</button>
+              <Link to="/challenges" className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg text-sm font-semibold" data-testid="challenges-link">🏆 المنافسات</Link>
+              <button onClick={onLogout} className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg text-sm font-semibold" data-testid="logout-btn">🚪 خروج</button>
             </div>
           </div>
         </div>
@@ -209,7 +206,7 @@ function Dashboard({ onLogout }) {
       {/* Message */}
       {message && (
         <div className="container mx-auto px-4 mt-4">
-          <div className="bg-white border-r-4 border-lime-500 text-green-700 p-3 rounded-lg shadow text-center font-semibold animate-fadeIn">{message}</div>
+          <div className="bg-white border-r-4 border-green-500 text-green-700 p-3 rounded-lg shadow text-center font-semibold animate-fadeIn">{message}</div>
         </div>
       )}
 
@@ -218,7 +215,7 @@ function Dashboard({ onLogout }) {
         <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
           {sections.map(s => (
             <button key={s.id} onClick={() => setActiveSection(s.id)}
-              className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeSection === s.id ? "bg-lime-500 text-black shadow-lg border-2 border-black" : "bg-white text-gray-600 shadow hover:bg-gray-50"}`}
+              className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeSection === s.id ? "bg-green-600 text-white shadow-lg" : "bg-white text-gray-600 shadow hover:bg-gray-50"}`}
               data-testid={`section-${s.id}`}
             >
               {s.icon} {s.label}
@@ -234,16 +231,16 @@ function Dashboard({ onLogout }) {
           <div className="space-y-4">
             {/* Action Buttons */}
             <div className="flex gap-2 flex-wrap">
-              <button onClick={() => setShowAddStudent(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="add-student-btn">➕ إضافة طالب</button>
+              <button onClick={() => setShowAddStudent(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="add-student-btn">➕ إضافة طالب</button>
               <button onClick={() => setShowQRModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="qr-codes-btn">📱 رموز QR</button>
-              <button onClick={() => setShowBulkPoints(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="bulk-points-btn">💎 نقاط جماعية</button>
+              <button onClick={() => setShowBulkPoints(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="bulk-points-btn">💎 نقاط جماعية</button>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-lime-100">
+              <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-green-100">
                 <p className="text-xl">👥</p>
-                <div className="text-xl font-bold text-lime-600">{students.length}</div>
+                <div className="text-xl font-bold text-green-600">{students.length}</div>
                 <div className="text-xs text-gray-500">طالب</div>
               </div>
               <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-blue-100">
@@ -251,9 +248,9 @@ function Dashboard({ onLogout }) {
                 <div className="text-xl font-bold text-blue-600">{students.reduce((a, s) => a + s.points, 0)}</div>
                 <div className="text-xs text-gray-500">مجموع النقاط</div>
               </div>
-              <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-green-100">
+              <div className="bg-white rounded-xl p-3 text-center shadow-lg border border-purple-100">
                 <p className="text-xl">🏅</p>
-                <div className="text-xl font-bold text-green-600">{supervisors.length}</div>
+                <div className="text-xl font-bold text-purple-600">{supervisors.length}</div>
                 <div className="text-xs text-gray-500">مجموعة</div>
               </div>
             </div>
@@ -293,7 +290,7 @@ function Dashboard({ onLogout }) {
                         </div>
 
                         {/* Points */}
-                        <span className="bg-gradient-to-r from-lime-100 to-green-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-bold">{student.points} ⭐</span>
+                        <span className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-bold">{student.points} ⭐</span>
 
                         {/* Actions */}
                         <div className="flex gap-1">
@@ -318,7 +315,7 @@ function Dashboard({ onLogout }) {
                     <div key={student.id} className="flex items-center gap-3 p-2 rounded-lg border border-gray-300 bg-gray-50">
                       <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold">{student.name.charAt(0)}</div>
                       <div className="flex-1"><p className="font-semibold text-sm">{student.name}</p></div>
-                      <span className="bg-lime-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-bold">{student.points}</span>
+                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-bold">{student.points}</span>
                       <button onClick={() => setSelectedStudent(student)} className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">نقاط</button>
                     </div>
                   ))}
@@ -356,22 +353,22 @@ function Dashboard({ onLogout }) {
             <form onSubmit={addStudent} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">اسم الطالب *</label>
-                <input type="text" value={newName} onChange={e => setNewName(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="الاسم الكامل" required data-testid="new-student-name" />
+                <input type="text" value={newName} onChange={e => setNewName(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" placeholder="الاسم الكامل" required data-testid="new-student-name" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">جوال ولي الأمر</label>
-                <input type="text" value={newPhone} onChange={e => setNewPhone(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="05xxxxxxxx" data-testid="new-student-phone" />
+                <input type="text" value={newPhone} onChange={e => setNewPhone(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" placeholder="05xxxxxxxx" data-testid="new-student-phone" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">المجموعة *</label>
-                <select value={newSupervisor} onChange={e => setNewSupervisor(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" required data-testid="new-student-supervisor">
+                <select value={newSupervisor} onChange={e => setNewSupervisor(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" required data-testid="new-student-supervisor">
                   <option value="">اختر المجموعة</option>
                   {supervisors.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 {supervisors.length === 0 && <p className="text-xs text-red-500 mt-1">⚠️ أضف مجموعة أولاً من قسم المجموعات</p>}
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold disabled:opacity-50 border-2 border-black" data-testid="submit-add-student">
+                <button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold disabled:opacity-50" data-testid="submit-add-student">
                   {loading ? "جاري الإضافة..." : "إضافة"}
                 </button>
                 <button type="button" onClick={() => setShowAddStudent(false)} className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-bold">إلغاء</button>
@@ -389,21 +386,21 @@ function Dashboard({ onLogout }) {
             <form onSubmit={updateStudent} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">الاسم</label>
-                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" required />
+                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" required />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">الجوال</label>
-                <input type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" />
+                <input type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">المجموعة</label>
-                <select value={editSupervisor} onChange={e => setEditSupervisor(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500">
+                <select value={editSupervisor} onChange={e => setEditSupervisor(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-green-500">
                   <option value="">بدون مجموعة</option>
                   {supervisors.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold disabled:opacity-50 border-2 border-black">تحديث</button>
+                <button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold disabled:opacity-50">تحديث</button>
                 <button type="button" onClick={() => setEditStudent(null)} className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-bold">إلغاء</button>
               </div>
             </form>
@@ -447,21 +444,21 @@ function Dashboard({ onLogout }) {
             <form onSubmit={handleBulkPoints} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">المجموعة</label>
-                <select value={bulkGroup} onChange={e => setBulkGroup(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" required data-testid="bulk-group">
+                <select value={bulkGroup} onChange={e => setBulkGroup(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-purple-500" required data-testid="bulk-group">
                   <option value="">اختر المجموعة</option>
                   {supervisors.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">النقاط</label>
-                <input type="number" value={bulkPoints} onChange={e => setBulkPoints(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="مثال: 50 أو -20" required data-testid="bulk-points-input" />
+                <input type="number" value={bulkPoints} onChange={e => setBulkPoints(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-purple-500" placeholder="مثال: 50 أو -20" required data-testid="bulk-points-input" />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">السبب</label>
-                <input type="text" value={bulkReason} onChange={e => setBulkReason(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="سبب إضافة/خصم النقاط" required data-testid="bulk-reason" />
+                <input type="text" value={bulkReason} onChange={e => setBulkReason(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-purple-500" placeholder="سبب إضافة/خصم النقاط" required data-testid="bulk-reason" />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold disabled:opacity-50 border-2 border-black" data-testid="submit-bulk-points">تطبيق</button>
+                <button type="submit" disabled={loading} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold disabled:opacity-50" data-testid="submit-bulk-points">تطبيق</button>
                 <button type="button" onClick={() => setShowBulkPoints(false)} className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-bold">إلغاء</button>
               </div>
             </form>
