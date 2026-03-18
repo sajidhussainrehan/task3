@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL?.replace(/\/+$/, "") || "";
-const API = `${API_BASE}/api`;
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function LeagueStarManager() {
   const [stars, setStars] = useState([]);

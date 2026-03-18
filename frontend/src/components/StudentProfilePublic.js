@@ -3,8 +3,8 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import RamadanQuiz from "./RamadanQuiz";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL?.replace(/\/+$/, "") || "";
-const API = `${API_BASE}/api`;
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function StudentProfilePublic() {
   const [renderError, setRenderError] = useState(null);

@@ -10,7 +10,8 @@ import ViewerLinksManager from "./ViewerLinksManager";
 import GroupsManager from "./GroupsManager";
 import AttendanceManager from "./AttendanceManager";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 const SUPERVISOR_COLORS = [
   { bg: "bg-lime-100", text: "text-lime-700", border: "border-lime-400", gradient: "from-lime-500 to-lime-600" },
