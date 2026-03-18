@@ -13,7 +13,10 @@ import TeacherDashboard from "./components/TeacherDashboard";
 function App() {
   const [token, setToken] = useState(localStorage.getItem("ghiras_token"));
   const [viewOnlyToken, setViewOnlyToken] = useState(localStorage.getItem("viewonly_token"));
-  const [teacherToken, setTeacherToken] = useState(localStorage.getItem("teacher_token"));
+  const [teacherToken, setTeacherToken] = useState(() => {
+    const stored = localStorage.getItem("teacher_token");
+    return stored ? JSON.parse(stored) : null;
+  });
 
   const handleLogin = (newToken) => {
     setToken(newToken);
@@ -23,8 +26,8 @@ function App() {
     setViewOnlyToken(newToken);
   };
 
-  const handleTeacherLogin = (newToken) => {
-    setTeacherToken(newToken);
+  const handleTeacherLogin = (teacherData) => {
+    setTeacherToken(teacherData);
   };
 
   const handleLogout = () => {
@@ -40,6 +43,12 @@ function App() {
   const handleTeacherLogout = () => {
     localStorage.removeItem("teacher_token");
     setTeacherToken(null);
+  };
+
+  // Helper to get teacher data
+  const getTeacherData = () => {
+    if (!teacherToken) return null;
+    return typeof teacherToken === 'object' ? teacherToken : JSON.parse(teacherToken);
   };
 
   return (
@@ -69,7 +78,7 @@ function App() {
         />
         <Route 
           path="/teacher" 
-          element={teacherToken ? <TeacherDashboard onLogout={handleTeacherLogout} /> : <Navigate to="/teacher-login" />} 
+          element={teacherToken ? <TeacherDashboard onLogout={handleTeacherLogout} teacherData={getTeacherData()} /> : <Navigate to="/teacher-login" />} 
         />
         <Route 
           path="/teacher-login" 

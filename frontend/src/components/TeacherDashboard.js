@@ -4,12 +4,17 @@ import axios from "axios";
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
-function TeacherDashboard({ onLogout }) {
+function TeacherDashboard({ onLogout, teacherData }) {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showGradeModal, setShowGradeModal] = useState(false);
   const [message, setMessage] = useState("");
   const [halaqaHistory, setHalaqaHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Get teacher info
+  const teacherId = teacherData?.teacherId || "1";
+  const teacherName = teacherData?.teacherName || "معلم";
 
   // Grade form
   const [memorization, setMemorization] = useState(0);
@@ -19,10 +24,11 @@ function TeacherDashboard({ onLogout }) {
 
   const fetchStudents = async () => {
     try {
-      const res = await axios.get(`${API}/students`);
+      const res = await axios.get(`${API}/students/by-teacher/${teacherId}`);
       setStudents(res.data);
     } catch (err) {
       console.error(err);
+      showMsg("❌ خطأ في تحميل الطلاب");
     }
   };
 
@@ -57,6 +63,7 @@ function TeacherDashboard({ onLogout }) {
   const saveGrade = async (e) => {
     e.preventDefault();
     if (!selectedStudent) return;
+    setLoading(true);
 
     try {
       await axios.post(`${API}/halaqa-grades`, {
@@ -70,9 +77,11 @@ function TeacherDashboard({ onLogout }) {
 
       showMsg(`✅ تم حفظ درجات ${selectedStudent.name} بنجاح`);
       setShowGradeModal(false);
-      fetchStudents(); // Refresh to get updated points
+      fetchStudents();
     } catch (err) {
       showMsg("❌ خطأ في حفظ الدرجات");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,8 +104,8 @@ function TeacherDashboard({ onLogout }) {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-black">📚 لوحة تحكم معلم حلقة القرآن</h1>
-              <p className="text-green-900 text-sm">🎓 تقييم حلقة القرآن</p>
+              <h1 className="text-xl font-bold text-black">📚 {teacherName}</h1>
+              <p className="text-green-900 text-sm">🎓 حلقة تحفيظ القرآن الكريم</p>
             </div>
             <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-lime-400 px-4 py-2 rounded-lg text-sm font-semibold border-2 border-lime-400">
               🚪 خروج
@@ -134,11 +143,18 @@ function TeacherDashboard({ onLogout }) {
         {/* Students List */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black p-3 border-b-2 border-black">
-            <h2 className="text-lg font-bold">📋 قائمة الطلاب</h2>
-            <p className="text-green-900 text-xs">اختر طالباً لإدخال درجات</p>
+            <h2 className="text-lg font-bold">📋 طلاب {teacherName}</h2>
+            <p className="text-green-900 text-xs">اختر طالباً لإدخال درجات الحلقة</p>
           </div>
           <div className="p-4 space-y-3">
-            {students.sort((a, b) => b.points - a.points).map((student, index) => (
+            {students.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-4xl mb-2">📭</p>
+                <p>لا يوجد طلاب مخصصين لهذا المعلم</p>
+                <p className="text-sm mt-2">تواصل مع المشرف لإضافتك كمعلم للطلاب</p>
+              </div>
+            ) : (
+              students.sort((a, b) => b.points - a.points).map((student, index) => (
               <div key={student.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-lime-300 transition">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-lime-100 text-green-700 flex items-center justify-center font-bold text-sm">
@@ -158,7 +174,7 @@ function TeacherDashboard({ onLogout }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-center">
-                    <span className="bg-lime-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">
+                    <span className="bg-lime-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold border border-green-300">
                       {student.points} ⭐
                     </span>
                     <p className="text-xs text-gray-400 mt-1">النقاط</p>
@@ -171,7 +187,8 @@ function TeacherDashboard({ onLogout }) {
                   </button>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </div>
@@ -252,8 +269,8 @@ function TeacherDashboard({ onLogout }) {
               </div>
 
               <div className="flex gap-3">
-                <button type="submit" className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold border-2 border-black">
-                  💾 حفظ الدرجات
+                <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold border-2 border-black disabled:opacity-50">
+                  {loading ? "⏳ جاري الحفظ..." : "💾 حفظ الدرجات"}
                 </button>
                 <button type="button" onClick={() => setShowGradeModal(false)} className="flex-1 bg-gray-400 text-white py-3 rounded-lg font-bold">
                   إلغاء
@@ -287,14 +304,11 @@ function TeacherDashboard({ onLogout }) {
         </div>
       )}
 
-      {/* Made with Aboughaith Badge */}
+      {/* Footer */}
       <div className="fixed bottom-4 left-4 z-50">
-        <a href="#" className="flex items-center gap-2 bg-black text-white px-3 py-2 rounded-lg shadow-lg hover:bg-gray-800 transition">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
-          <span className="text-xs font-medium">by Aboughaith</span>
-        </a>
+        <div className="flex items-center gap-2 bg-black text-white px-3 py-2 rounded-lg shadow-lg">
+          <span className="text-xs">بارع - نظام إدارة حلقة القرآن</span>
+        </div>
       </div>
     </div>
   );

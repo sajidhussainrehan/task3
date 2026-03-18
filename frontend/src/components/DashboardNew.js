@@ -49,6 +49,7 @@ function Dashboard({ onLogout }) {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editSupervisor, setEditSupervisor] = useState("");
+  const [editTeacher, setEditTeacher] = useState("");
 
   const headers = {};
 
@@ -100,7 +101,7 @@ function Dashboard({ onLogout }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.put(`${API}/students/${editStudent.id}`, { name: editName, phone: editPhone, supervisor: editSupervisor }, { headers });
+      await axios.put(`${API}/students/${editStudent.id}`, { name: editName, phone: editPhone, supervisor: editSupervisor, teacher: editTeacher }, { headers });
       setEditStudent(null);
       showMsg("تم تحديث بيانات الطالب");
       await fetchStudents();
@@ -290,6 +291,11 @@ function Dashboard({ onLogout }) {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-800 truncate">{student.name}</p>
                           {student.phone && <p className="text-xs text-gray-400">{student.phone}</p>}
+                          {student.teacher && (
+                            <span className="inline-block mt-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold border border-blue-300">
+                              📚 معلم {student.teacher}
+                            </span>
+                          )}
                         </div>
 
                         {/* Points */}
@@ -298,7 +304,7 @@ function Dashboard({ onLogout }) {
                         {/* Actions */}
                         <div className="flex gap-1">
                           <button onClick={() => setSelectedStudent(student)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold" data-testid={`points-btn-${student.id}`}>نقاط</button>
-                          <button onClick={() => { setEditStudent(student); setEditName(student.name); setEditPhone(student.phone || ""); setEditSupervisor(student.supervisor || ""); }}
+                          <button onClick={() => { setEditStudent(student); setEditName(student.name); setEditPhone(student.phone || ""); setEditSupervisor(student.supervisor || ""); setEditTeacher(student.teacher || ""); }}
                             className="bg-gray-400 hover:bg-gray-500 text-white px-2 py-1 rounded text-xs" data-testid={`edit-btn-${student.id}`}>تعديل</button>
                           <button onClick={() => deleteStudent(student.id)} className="text-red-400 hover:text-red-600 text-sm" data-testid={`delete-btn-${student.id}`}>&#10005;</button>
                         </div>
@@ -401,6 +407,16 @@ function Dashboard({ onLogout }) {
                   <option value="">بدون مجموعة</option>
                   {supervisors.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">📚 معلم القرآن</label>
+                <select value={editTeacher} onChange={e => setEditTeacher(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500">
+                  <option value="">بدون معلم</option>
+                  <option value="1">المعلم الأول</option>
+                  <option value="2">المعلم الثاني</option>
+                  <option value="3">المعلم الثالث</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">💡 يمكن تعيين الطالب إلى أحد 3 معلمين للقرآن</p>
               </div>
               <div className="flex gap-3">
                 <button type="submit" disabled={loading} className="flex-1 bg-lime-500 hover:bg-lime-600 text-black py-3 rounded-lg font-bold disabled:opacity-50 border-2 border-black">تحديث</button>
