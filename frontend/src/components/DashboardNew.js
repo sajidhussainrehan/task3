@@ -334,6 +334,13 @@ function Dashboard({ onLogout }) {
           </div>
         )}
 
+        {/* ===== Attendance Section ===== */}
+        {activeSection === "attendance" && (
+          <div className="space-y-4">
+            <AttendanceManager onAttendanceChange={fetchStudents} />
+          </div>
+        )}
+
         {/* ===== Tasks Section ===== */}
         {activeSection === "tasks" && <TasksManager supervisors={supervisors} />}
 

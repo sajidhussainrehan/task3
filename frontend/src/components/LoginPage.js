@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
@@ -75,6 +76,12 @@ function LoginPage({ onLogin }) {
           >
             {loading ? "جاري الدخول..." : "تسجيل الدخول"}
           </button>
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm text-gray-500 mb-3">أو</p>
+            <Link to="/teacher-login" className="block w-full bg-black hover:bg-gray-800 text-lime-400 py-3 rounded-lg font-bold text-center border-2 border-lime-400 transition">
+              📚 دخول معلمي القرآن
+            </Link>
+          </div>
         </form>
 
         {/* Special Access Icons */}
