@@ -1,7 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -25,13 +26,13 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-lime-400 via-green-500 to-black flex items-center justify-center p-4" dir="rtl">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl font-bold">
-            غ
+          <div className="w-20 h-20 bg-gradient-to-br from-lime-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl font-bold border-4 border-black">
+            ب
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">نادي غِراس</h1>
+          <h1 className="text-center text-lg font-bold mb-6">🌟 بارع</h1>
           <p className="text-gray-500 mt-2">تسجيل دخول المشرف</p>
         </div>
 
@@ -48,7 +49,7 @@ function LoginPage({ onLogin }) {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
               placeholder="اسم المستخدم"
               required
               data-testid="login-username"
@@ -60,7 +61,7 @@ function LoginPage({ onLogin }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
               placeholder="كلمة المرور"
               required
               data-testid="login-password"
@@ -69,7 +70,7 @@ function LoginPage({ onLogin }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 rounded-lg font-bold text-lg transition-all disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-black py-3 rounded-lg font-bold text-lg transition-all disabled:opacity-50"
             data-testid="login-submit"
           >
             {loading ? "جاري الدخول..." : "تسجيل الدخول"}

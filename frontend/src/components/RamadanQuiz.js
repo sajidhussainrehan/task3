@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function RamadanQuiz({ studentId, onPointsEarned }) {
   const [question, setQuestion] = useState(null);
@@ -75,7 +75,7 @@ function RamadanQuiz({ studentId, onPointsEarned }) {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white text-center">
+      <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-2xl p-6 text-black text-center border-2 border-black">
         <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto"></div>
         <p className="mt-2">جاري تحميل المسابقة...</p>
       </div>
@@ -168,13 +168,13 @@ function RamadanQuiz({ studentId, onPointsEarned }) {
 
   // Show question
   return (
-    <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl overflow-hidden shadow-xl" dir="rtl">
+    <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-2xl overflow-hidden shadow-xl border-2 border-black" dir="rtl">
       {/* Header */}
       <div className="bg-black/20 px-6 py-4 flex items-center gap-3">
         <span className="text-4xl">🌙</span>
         <div>
           <h3 className="text-xl font-bold text-white">مسابقة رمضان</h3>
-          <p className="text-purple-200 text-sm">اليوم {question.day} من 15 • {question.points} نقطة</p>
+          <p className="text-green-100 text-sm">اليوم {question.day} من 15 • {question.points} نقطة</p>
         </div>
       </div>
       
@@ -193,14 +193,14 @@ function RamadanQuiz({ studentId, onPointsEarned }) {
               disabled={submitting}
               className={`w-full p-4 rounded-xl text-right transition-all ${
                 selectedAnswer === index
-                  ? 'bg-white text-purple-700 shadow-lg transform scale-[1.02]'
+                  ? 'bg-white text-green-700 shadow-lg transform scale-[1.02]'
                   : 'bg-white/20 text-white hover:bg-white/30'
               }`}
             >
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                   selectedAnswer === index
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-lime-500 text-black'
                     : 'bg-white/30 text-white'
                 }`}>
                   {['أ', 'ب', 'ج', 'د'][index]}
@@ -215,11 +215,11 @@ function RamadanQuiz({ studentId, onPointsEarned }) {
         <button
           onClick={handleSubmit}
           disabled={selectedAnswer === null || submitting}
-          className="w-full mt-6 bg-white text-purple-700 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full mt-6 bg-white text-green-700 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? (
             <span className="flex items-center justify-center gap-2">
-              <div className="animate-spin w-5 h-5 border-2 border-purple-700 border-t-transparent rounded-full"></div>
+              <div className="animate-spin w-5 h-5 border-2 border-green-700 border-t-transparent rounded-full"></div>
               جاري التحقق...
             </span>
           ) : (

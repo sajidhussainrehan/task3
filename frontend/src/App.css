@@ -1,4 +1,4 @@
-/* Ghiras Club Styles */
+/* New Theme Styles - Light Green + Black      sss  */
 
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
@@ -9,7 +9,7 @@
 }
 
 body {
-  font-family: 'Cairo', 'Tahoma', sans-serif;
+  font-family: 'Cairo', 'Noto Sans Arabic', 'Tahoma', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -41,23 +41,24 @@ tr {
   transition: all 0.3s ease;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Light Green + Black theme */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #ecfdf5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #10b981;
+  background: #22c55e;
   border-radius: 5px;
+  border: 2px solid #000;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #059669;
+  background: #16a34a;
 }
 
 /* Responsive text */

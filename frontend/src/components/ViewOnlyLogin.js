@@ -1,7 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function ViewOnlyLogin({ onLogin }) {
   const [password, setPassword] = useState("");
@@ -25,7 +26,7 @@ function ViewOnlyLogin({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50 flex items-center justify-center p-4" dir="rtl">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">

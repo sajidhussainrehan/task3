@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function ViewOnlyDashboard({ onLogout }) {
   const [students, setStudents] = useState([]);
@@ -61,9 +62,9 @@ function ViewOnlyDashboard({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-4 shadow-lg">
+      <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black py-4 shadow-lg border-b-4 border-black">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -192,7 +193,7 @@ function ViewOnlyDashboard({ onLogout }) {
                         <td className="p-3 text-center">{i === 0 ? "🥇" : i + 1}</td>
                         <td className="p-3 font-semibold">{team.team}</td>
                         <td className="p-3 text-center">{team.played}</td>
-                        <td className="p-3 text-center text-green-600">{team.wins || 0}</td>
+                        <td className="p-3 text-center text-lime-600">{team.wins || 0}</td>
                         <td className="p-3 text-center text-yellow-600">{team.draws || 0}</td>
                         <td className="p-3 text-center text-red-600">{team.losses || 0}</td>
                         <td className="p-3 text-center font-bold text-blue-600">{team.points}</td>
@@ -216,7 +217,7 @@ function ViewOnlyDashboard({ onLogout }) {
                 <div 
                   key={task.id} 
                   className={`p-4 rounded-lg border ${
-                    task.status === "completed" ? "bg-green-50 border-green-200" :
+                    task.status === "completed" ? "bg-lime-50 border-lime-200" :
                     task.status === "awaiting_approval" ? "bg-orange-50 border-orange-200" :
                     task.claimed_by ? "bg-yellow-50 border-yellow-200" :
                     "bg-white border-gray-200"
@@ -227,7 +228,7 @@ function ViewOnlyDashboard({ onLogout }) {
                       <p className="font-semibold">{task.description}</p>
                       <p className="text-sm text-gray-500">المجموعة: {task.group}</p>
                     </div>
-                    <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-sm font-bold">
+                    <span className="bg-lime-100 text-green-700 px-2 py-1 rounded text-sm font-bold border border-green-300">
                       {task.points} نقطة
                     </span>
                   </div>
@@ -297,7 +298,7 @@ function ViewOnlyDashboard({ onLogout }) {
                   <div 
                     key={comp.id} 
                     className={`p-4 rounded-lg border ${
-                      comp.status === "active" ? "bg-green-50 border-green-200" :
+                      comp.status === "active" ? "bg-lime-50 border-lime-200" :
                       comp.status === "completed" ? "bg-gray-50 border-gray-200" :
                       "bg-yellow-50 border-yellow-200"
                     }`}
@@ -312,11 +313,11 @@ function ViewOnlyDashboard({ onLogout }) {
                         </div>
                       </div>
                       <div className="text-center">
-                        <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                        <span className="bg-lime-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold border border-green-300">
                           💎 {comp.points} نقطة
                         </span>
                         <p className={`text-xs mt-1 font-semibold ${
-                          comp.status === "active" ? "text-green-600" :
+                          comp.status === "active" ? "text-lime-600" :
                           comp.status === "completed" ? "text-gray-500" :
                           "text-yellow-600"
                         }`}>
@@ -375,11 +376,11 @@ function ViewOnlyDashboard({ onLogout }) {
                     <p className="text-2xl font-bold text-blue-700">{selectedStudent.points}</p>
                     <p className="text-xs text-gray-600">إجمالي النقاط</p>
                   </div>
-                  <div className="bg-emerald-50 p-3 rounded-lg text-center border-2 border-emerald-200">
-                    <p className="text-2xl font-bold text-emerald-700">
+                  <div className="bg-lime-50 p-3 rounded-lg text-center border-2 border-lime-200">
+                    <p className="text-2xl font-bold text-lime-700">
                       {halaqaHistory.reduce((sum, g) => sum + (g.total_points || 0), 0)}
                     </p>
-                    <p className="text-xs text-emerald-600">نقاط القرآن 📚</p>
+                    <p className="text-xs text-lime-600">نقاط القرآن 📚</p>
                   </div>
                   <div className="bg-green-50 p-3 rounded-lg text-center">
                     <p className="text-2xl font-bold text-green-700">
@@ -393,15 +394,15 @@ function ViewOnlyDashboard({ onLogout }) {
               {/* Halaqa Grades Details */}
               {halaqaHistory.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="font-bold text-emerald-700 mb-2 flex items-center gap-2">
+                  <h3 className="font-bold text-lime-700 mb-2 flex items-center gap-2">
                     📚 درجات خلقة (قرآن)
                   </h3>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {halaqaHistory.map((grade) => (
-                      <div key={grade.id} className="bg-emerald-50 p-3 rounded-lg text-sm border border-emerald-100">
+                      <div key={grade.id} className="bg-lime-50 p-3 rounded-lg text-sm border border-lime-100">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="font-semibold text-emerald-800">📖 {grade.student_name}</span>
-                          <span className="font-bold text-emerald-600">{grade.total_points} pts</span>
+                          <span className="font-semibold text-lime-800">📖 {grade.student_name}</span>
+                          <span className="font-bold text-lime-600">{grade.total_points} pts</span>
                         </div>
                         <div className="text-xs text-gray-500">
                           حفظ: {grade.memorization} | مراجعة: {grade.revision} | متون: {grade.mutun}
@@ -423,7 +424,7 @@ function ViewOnlyDashboard({ onLogout }) {
                     {pointsLog.slice(0, 10).map((log, i) => (
                       <div key={i} className="bg-gray-50 p-2 rounded text-sm flex justify-between">
                         <span>{log.reason}</span>
-                        <span className={log.points > 0 ? "text-green-600" : "text-red-600"}>
+                        <span className={log.points > 0 ? "text-lime-600" : "text-red-600"}>
                           {log.points > 0 ? "+" : ""}{log.points}
                         </span>
                       </div>
