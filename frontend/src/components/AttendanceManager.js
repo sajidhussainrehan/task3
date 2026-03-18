@@ -49,26 +49,41 @@ function AttendanceManager({ onAttendanceChange }) {
     fetchTodayAttendance();
   }, []);
 
-  // Timer functionality
+  // Timer functionality - stops when session is finalized
   useEffect(() => {
     let interval;
-    if (session && session.started_at) {
+    if (session && session.started_at && !session.is_finalized) {
       const startTime = new Date(session.started_at).getTime();
+      // If session was stopped, freeze the timer at the stopped time
+      const endTime = session.ended_at ? new Date(session.ended_at).getTime() : null;
       
-      interval = setInterval(() => {
-        const now = new Date().getTime();
-        const diff = now - startTime;
-        
+      if (endTime) {
+        // Session stopped - show frozen time
+        const diff = endTime - startTime;
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
         const display = hours > 0 
           ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
           : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
         setTimerDisplay(display);
-      }, 1000);
+      } else {
+        // Session still active - keep counting
+        interval = setInterval(() => {
+          const now = new Date().getTime();
+          const diff = now - startTime;
+          
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          
+          const display = hours > 0 
+            ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+            : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          
+          setTimerDisplay(display);
+        }, 1000);
+      }
     }
     
     return () => clearInterval(interval);
@@ -121,19 +136,42 @@ function AttendanceManager({ onAttendanceChange }) {
     }
   };
 
+  // Extract student ID from various barcode/QR formats
+  const parseBarcode = (input) => {
+    const trimmed = input.trim();
+    
+    // Case 1: QR code URL like http://localhost:3001/public/{student_id}
+    // or https://yourdomain.com/public/{student_id}
+    const publicMatch = trimmed.match(/\/public\/([a-f0-9-]+)/i);
+    if (publicMatch) return publicMatch[1];
+    
+    // Case 2: Direct student ID (UUID format)
+    const uuidMatch = trimmed.match(/^[a-f0-9-]{36}$/i);
+    if (uuidMatch) return trimmed;
+    
+    // Case 3: Return raw input (could be name or other format)
+    return trimmed;
+  };
+
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcodeInput.trim() || !session) return;
 
-    // Find student by barcode (using student ID as barcode for simplicity)
-    // In a real scenario, you might have a separate barcode field
+    // Parse the barcode input to extract student ID
+    const parsedInput = parseBarcode(barcodeInput);
+
+    // Find student by: extracted ID from QR URL, direct ID match, custom barcode, or name search
     const student = students.find(s => 
-      s.id.toLowerCase() === barcodeInput.toLowerCase() ||
-      s.name.includes(barcodeInput)
+      s.id.toLowerCase() === parsedInput.toLowerCase() ||
+      s.id.toLowerCase() === barcodeInput.trim().toLowerCase() ||
+      (s.barcode && s.barcode.toLowerCase() === barcodeInput.trim().toLowerCase()) ||
+      (s.barcode && s.barcode.toLowerCase() === parsedInput.toLowerCase()) ||
+      s.name.includes(barcodeInput.trim())
     );
 
     if (!student) {
-      setMessage("❌ الطالب غير موجود");
+      setMessage("❌ الطالب غير موجود - تأكد من مسح باركود صحيح");
+      setScannedStudent(null);
       setBarcodeInput("");
       return;
     }
@@ -191,7 +229,9 @@ function AttendanceManager({ onAttendanceChange }) {
       const updatedRes = await axios.get(`${API}/attendance/today`);
       setRecords(updatedRes.data.records);
       updateStats(updatedRes.data.records);
+      // Mark session as finalized - this also stops the timer
       setSession({ ...session, is_finalized: true });
+      setTimerActive(false);
       
       if (onAttendanceChange) onAttendanceChange();
     } catch (err) {
@@ -200,6 +240,18 @@ function AttendanceManager({ onAttendanceChange }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Reset everything and allow starting a new session
+  const startNewSession = () => {
+    setSession(null);
+    setRecords([]);
+    setSessionStarted(false);
+    setTimerActive(false);
+    setTimerDisplay("00:00");
+    setStats({ early: 0, late: 0, absent: 0, total: 0 });
+    setScannedStudent(null);
+    setMessage("");
   };
 
   const getStatusColor = (status) => {
@@ -387,8 +439,15 @@ function AttendanceManager({ onAttendanceChange }) {
           )}
 
           {session?.is_finalized && (
-            <div className="bg-gray-100 p-4 rounded-xl text-center border-2 border-gray-400">
-              <p className="text-lg font-bold text-gray-700">🔒 تم إنهاء الحضور لهذا اليوم</p>
+            <div className="bg-gray-100 p-6 rounded-xl text-center border-2 border-gray-400 space-y-4">
+              <p className="text-lg font-bold text-gray-700">🔒 تم إنهاء الحضور لهذه الجلسة</p>
+              <p className="text-sm text-gray-500">✅ حاضر مبكر: {stats.early} | ⚠️ متأخر: {stats.late} | ❌ غائب: {stats.absent}</p>
+              <button
+                onClick={startNewSession}
+                className="bg-lime-500 hover:bg-lime-600 text-black px-6 py-3 rounded-xl font-bold text-lg border-2 border-black transition-all"
+              >
+                🔄 بدء جلسة حضور جديدة
+              </button>
             </div>
           )}
         </div>

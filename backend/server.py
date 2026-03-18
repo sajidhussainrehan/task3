@@ -79,6 +79,7 @@ class Student(BaseModel):
     phone: Optional[str] = None
     supervisor: Optional[str] = None
     teacher: Optional[str] = None  # Teacher assignment (1, 2, or 3)
+    barcode: Optional[str] = None  # Custom barcode number for attendance scanning
     image_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -86,12 +87,14 @@ class StudentCreate(BaseModel):
     name: str
     phone: Optional[str] = None
     supervisor: Optional[str] = None
+    barcode: Optional[str] = None
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     supervisor: Optional[str] = None
     teacher: Optional[str] = None  # Allow updating teacher assignment
+    barcode: Optional[str] = None
 
 class PointsUpdate(BaseModel):
     points: int
@@ -863,12 +866,10 @@ async def scan_student_barcode(session_id: str, data: AttendanceScan):
     if not student:
         raise HTTPException(status_code=404, detail="الطالب غير موجود")
     
-    # Check if already scanned today
-    today = date.today().isoformat()
+    # Check if already scanned in this session
     existing_record = await db.attendance_records.find_one({
         "session_id": session_id,
-        "student_id": data.student_id,
-        "scanned_at": {"$gte": today}
+        "student_id": data.student_id
     }, {"_id": 0})
     
     if existing_record:
