@@ -271,11 +271,17 @@ class AttendanceRecord(BaseModel):
 
 @api_router.get("/students", response_model=List[Student])
 async def get_students():
+    """Retrieve all students sorted by points"""
     students = await db.students.find({}, {"_id": 0}).to_list(1000)
     for s in students:
         if isinstance(s.get("created_at"), str):
-            s["created_at"] = datetime.fromisoformat(s["created_at"])
-    students.sort(key=lambda x: x["points"], reverse=True)
+            try:
+                s["created_at"] = datetime.fromisoformat(s["created_at"].replace('Z', '+00:00'))
+            except:
+                s["created_at"] = datetime.now(timezone.utc)
+    
+    # Sort students by points (highest first)
+    students.sort(key=lambda x: x.get("points", 0), reverse=True)
     return students
 
 @api_router.post("/students", response_model=Student)
