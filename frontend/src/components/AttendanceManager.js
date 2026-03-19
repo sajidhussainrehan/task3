@@ -206,7 +206,11 @@ function AttendanceManager({ onAttendanceChange }) {
         if (onAttendanceChange) onAttendanceChange();
       }
     } catch (err) {
-      setMessage("❌ خطأ في مسح الباركود");
+      if (err.response?.status === 400) {
+        setMessage("❌ الجلسة منتهية - لا يمكن تسجيل حضور");
+      } else {
+        setMessage("❌ خطأ في مسح الباركود");
+      }
       console.error(err);
     } finally {
       setLoading(false);
@@ -242,8 +246,9 @@ function AttendanceManager({ onAttendanceChange }) {
     }
   };
 
-  // Reset everything and allow starting a new session
-  const startNewSession = () => {
+  // Reset everything and start a new session
+  const startNewSession = async () => {
+    // Reset local state first
     setSession(null);
     setRecords([]);
     setSessionStarted(false);
@@ -252,6 +257,22 @@ function AttendanceManager({ onAttendanceChange }) {
     setStats({ early: 0, late: 0, absent: 0, total: 0 });
     setScannedStudent(null);
     setMessage("");
+    
+    // Start a new session via API
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/attendance/start`);
+      setSession(res.data);
+      setSessionStarted(true);
+      setTimerActive(true);
+      setMessage("✅ تم بدء جلسة حضور جديدة");
+      if (onAttendanceChange) onAttendanceChange();
+    } catch (err) {
+      setMessage("❌ خطأ في بدء الجلسة الجديدة");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status) => {

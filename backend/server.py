@@ -9,7 +9,14 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
+
+# Riyadh timezone (UTC+3) - ensures date matching works correctly for Saudi Arabia
+RIYADH_TZ = timezone(timedelta(hours=3))
+
+def get_today_riyadh():
+    """Get today's date in Riyadh timezone"""
+    return datetime.now(RIYADH_TZ).date().isoformat()
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -109,29 +116,6 @@ class Group(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
 
-# --- Attendance Models ---
-class AttendanceSession(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    ended_at: Optional[datetime] = None
-    is_active: bool = True
-    is_finalized: bool = False
-
-class AttendanceRecord(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    session_id: str
-    student_id: str
-    student_name: str
-    barcode: Optional[str] = None
-    status: str  # early, late, absent
-    points: int
-    scanned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    is_late_period: bool = False
-
-class AttendanceScan(BaseModel):
-    student_id: str
-    barcode: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class GroupCreate(BaseModel):
     name: str
@@ -246,22 +230,23 @@ class HalaqaGradeCreate(BaseModel):
 
 class AttendanceSession(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    date: str = Field(default_factory=lambda: date.today().isoformat())
+    date: str = Field(default_factory=get_today_riyadh)
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ended_at: Optional[datetime] = None
     is_active: bool = True
+    is_finalized: bool = False
     created_by: str = "admin"
 
 class AttendanceScan(BaseModel):
     student_id: str
-    barcode: str
+    barcode: Optional[str] = None
 
 class AttendanceRecord(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str
     student_id: str
     student_name: str
-    barcode: str
+    barcode: Optional[str] = None
     status: str  # "early", "late", "absent"
     points: int
     scanned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -851,17 +836,20 @@ async def delete_halaqa_grade(grade_id: str):
 @api_router.post("/attendance/start", response_model=AttendanceSession)
 async def start_attendance_session():
     """Start a new attendance session for today"""
-    today = date.today().isoformat()
+    today = get_today_riyadh()
     
-    # Check if there's already an active session for today
-    existing = await db.attendance_sessions.find_one({"date": today, "is_active": True}, {"_id": 0})
+    # Only return existing if it's ACTIVE and NOT finalized
+    existing = await db.attendance_sessions.find_one(
+        {"date": today, "is_active": True, "is_finalized": {"$ne": True}}, 
+        {"_id": 0}
+    )
     if existing:
-        # Return existing session
+        # Return existing active session
         if isinstance(existing.get("started_at"), str):
             existing["started_at"] = datetime.fromisoformat(existing["started_at"])
         return existing
     
-    # Create new session
+    # Create new session (even if a finalized one exists for today)
     session = AttendanceSession()
     doc = session.model_dump()
     doc["started_at"] = doc["started_at"].isoformat()
@@ -889,6 +877,10 @@ async def scan_student_barcode(session_id: str, data: AttendanceScan):
     session = await db.attendance_sessions.find_one({"id": session_id}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=404, detail="جلسة الحضور غير موجودة")
+    
+    # Block scanning if session is finalized
+    if session.get("is_finalized"):
+        raise HTTPException(status_code=400, detail="الجلسة منتهية - لا يمكن تسجيل حضور")
     
     # Find student by ID
     student = await db.students.find_one({"id": data.student_id}, {"_id": 0})
@@ -959,7 +951,11 @@ async def finalize_attendance_session(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail="جلسة الحضور غير موجودة")
     
-    today = date.today().isoformat()
+    # Prevent double finalization
+    if session.get("is_finalized"):
+        raise HTTPException(status_code=400, detail="تم إنهاء هذه الجلسة مسبقاً")
+    
+    today = get_today_riyadh()
     
     # Get all students
     all_students = await db.students.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
@@ -1015,10 +1011,12 @@ async def finalize_attendance_session(session_id: str):
 
 @api_router.get("/attendance/today")
 async def get_today_attendance():
-    """Get today's attendance session and records"""
-    today = date.today().isoformat()
+    """Get today's latest attendance session and records"""
+    today = get_today_riyadh()
     
-    session = await db.attendance_sessions.find_one({"date": today}, {"_id": 0})
+    # Get the LATEST session for today (so new sessions after finalization work)
+    sessions = await db.attendance_sessions.find({"date": today}, {"_id": 0}).sort("started_at", -1).to_list(1)
+    session = sessions[0] if sessions else None
     if not session:
         return {"session": None, "records": []}
     
