@@ -108,6 +108,29 @@ class BulkPointsUpdate(BaseModel):
 class Group(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
+
+# --- Attendance Models ---
+class AttendanceSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ended_at: Optional[datetime] = None
+    is_active: bool = True
+    is_finalized: bool = False
+
+class AttendanceRecord(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    student_id: str
+    student_name: str
+    barcode: Optional[str] = None
+    status: str  # early, late, absent
+    points: int
+    scanned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_late_period: bool = False
+
+class AttendanceScan(BaseModel):
+    student_id: str
+    barcode: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class GroupCreate(BaseModel):
