@@ -399,7 +399,7 @@ async def get_groups():
 async def create_group(data: GroupCreate):
     group = Group(name=data.name)
     doc = group.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
     await db.groups.insert_one(doc)
     return group
 
