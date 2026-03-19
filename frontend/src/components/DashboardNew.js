@@ -89,11 +89,16 @@ function Dashboard({ onLogout }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${API}/students`, { name: newName, phone: newPhone, supervisor: newSupervisor, barcode: newBarcode || undefined }, { headers });
+      const res = await axios.post(`${API}/students`, { name: newName, phone: newPhone, supervisor: newSupervisor, barcode: newBarcode || undefined }, { headers });
+      // Instantly add the new student to the local list so it appears without refresh
+      if (res.data) {
+        setStudents(prev => [...prev, res.data].sort((a, b) => (b.points || 0) - (a.points || 0)));
+      }
       setNewName(""); setNewPhone(""); setNewSupervisor(""); setNewBarcode("");
       setShowAddStudent(false);
       showMsg("تمت إضافة الطالب بنجاح");
-      await fetchStudents();
+      // Also refresh from server in background (non-blocking)
+      fetchStudents().catch(() => {});
     } catch {
       showMsg("خطأ في إضافة الطالب");
     } finally { setLoading(false); }
@@ -104,9 +109,11 @@ function Dashboard({ onLogout }) {
     setLoading(true);
     try {
       await axios.put(`${API}/students/${editStudent.id}`, { name: editName, phone: editPhone, supervisor: editSupervisor, teacher: editTeacher, barcode: editBarcode || undefined }, { headers });
+      // Instantly update the student in local state
+      setStudents(prev => prev.map(s => s.id === editStudent.id ? { ...s, name: editName, phone: editPhone, supervisor: editSupervisor, teacher: editTeacher, barcode: editBarcode || undefined } : s));
       setEditStudent(null);
       showMsg("تم تحديث بيانات الطالب");
-      await fetchStudents();
+      fetchStudents().catch(() => {});
     } catch {
       showMsg("خطأ في التحديث");
     } finally { setLoading(false); }
@@ -116,8 +123,10 @@ function Dashboard({ onLogout }) {
     if (!window.confirm("هل أنت متأكد من حذف هذا الطالب؟")) return;
     try {
       await axios.delete(`${API}/students/${id}`, { headers });
+      // Instantly remove from local state
+      setStudents(prev => prev.filter(s => s.id !== id));
       showMsg("تم حذف الطالب");
-      await fetchStudents();
+      fetchStudents().catch(() => {});
     } catch {
       showMsg("خطأ في الحذف");
     }
