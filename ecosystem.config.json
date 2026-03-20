@@ -1,32 +1,11 @@
 {
   "apps": [
     {
-      "name": "ghiras-backend-main",
-      "interpreter": "none",
-      "script": "/home/ghiras/task3/backend/venv/bin/python3",
-      "args": "-m uvicorn server:app --host 0.0.0.0 --port 8000",
-      "cwd": "/home/ghiras/task3/backend",
+      "name": "ghiras-backend",
+      "script": "uvicorn",
+      "args": "server:app --host 0.0.0.0 --port 8000",
+      "cwd": "/home/username/ghiras97/backend",
       "env": {
-        "DB_NAME": "myaboughaith_task3",
-        "NODE_ENV": "production"
-      },
-      "instances": 1,
-      "exec_mode": "fork",
-      "restart_delay": 4000,
-      "max_restarts": 10,
-      "min_uptime": "10s",
-      "autorestart": true,
-      "watch": false,
-      "ignore_watch": ["node_modules", "logs"]
-    },
-    {
-      "name": "ghiras-backend-clubbariaa",
-      "interpreter": "none",
-      "script": "/home/ghiras/task3/backend/venv/bin/python3",
-      "args": "-m uvicorn server:app --host 0.0.0.0 --port 8001",
-      "cwd": "/home/ghiras/task3/backend",
-      "env": {
-        "DB_NAME": "clubbariaa_task3",
         "NODE_ENV": "production"
       },
       "instances": 1,
