@@ -9,6 +9,7 @@ import LeagueStarManager from "./LeagueStarManager";
 import ViewerLinksManager from "./ViewerLinksManager";
 import GroupsManager from "./GroupsManager";
 import AttendanceManager from "./AttendanceManager";
+import QuduratManager from "./QuduratManager";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -183,6 +184,7 @@ function Dashboard({ onLogout }) {
     { id: "league", label: "الدوري", icon: "⚽" },
     { id: "star", label: "نجم الدوري", icon: "⭐" },
     { id: "viewers", label: "روابط المشاهدة", icon: "🔗" },
+    { id: "qudurat", label: "القدرات", icon: "🍿" },
   ];
 
   return (
@@ -363,6 +365,9 @@ function Dashboard({ onLogout }) {
 
         {/* ===== Viewers Section ===== */}
         {activeSection === "viewers" && <ViewerLinksManager />}
+
+        {/* ===== Qudurat Section ===== */}
+        {activeSection === "qudurat" && <QuduratManager />}
       </div>
 
       {/* ===== Modals ===== */}

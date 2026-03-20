@@ -226,6 +226,50 @@ class HalaqaGradeCreate(BaseModel):
     mutun: int = 0
     notes: str = ""
 
+# ==================== Qudurat Models ====================
+
+class QuduratItem(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    video_url: str
+    question: str
+    options: List[str]
+    correct_answer: int
+    points_question: int = 10
+    points_summary: int = 20
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class QuduratCreate(BaseModel):
+    video_url: str
+    question: str
+    options: List[str]
+    correct_answer: int
+    points_question: int = 10
+    points_summary: int = 20
+
+class QuduratSubmission(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    qudurat_id: str
+    student_id: str
+    student_name: str
+    answer: int
+    is_correct: bool
+    summary: str
+    points_question: int = 0
+    points_summary_awarded: int = 0
+    status: str = "pending"  # "pending", "approved", "rejected"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class QuduratSubmissionCreate(BaseModel):
+    student_id: str
+    student_name: str
+    answer: int
+    summary: str
+
+class QuduratReview(BaseModel):
+    points: int
+    status: str  # "approved", "rejected"
+
 # ==================== Attendance Models ====================
 
 class AttendanceSession(BaseModel):
@@ -1052,6 +1096,141 @@ async def get_attendance_stats(session_id: str):
         "absent": absent_count,
         "total": len(records)
     }
+
+# ==================== Qudurat Endpoints ====================
+
+@api_router.get("/qudurat", response_model=List[QuduratItem])
+async def get_qudurat_all():
+    items = await db.qudurat.find({}, {"_id": 0}).to_list(1000)
+    for it in items:
+        if isinstance(it.get("created_at"), str):
+            it["created_at"] = datetime.fromisoformat(it["created_at"])
+    return items
+
+@api_router.get("/qudurat/active", response_model=List[QuduratItem])
+async def get_qudurat_active():
+    items = await db.qudurat.find({"is_active": True}, {"_id": 0}).to_list(1000)
+    for it in items:
+        if isinstance(it.get("created_at"), str):
+            it["created_at"] = datetime.fromisoformat(it["created_at"])
+    return items
+
+@api_router.post("/qudurat", response_model=QuduratItem)
+async def create_qudurat(data: QuduratCreate):
+    item = QuduratItem(**data.model_dump())
+    doc = item.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.qudurat.insert_one(doc)
+    return item
+
+@api_router.put("/qudurat/{item_id}/toggle")
+async def toggle_qudurat(item_id: str):
+    item = await db.qudurat.find_one({"id": item_id})
+    if not item:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    await db.qudurat.update_one({"id": item_id}, {"$set": {"is_active": not item.get("is_active", True)}})
+    return {"success": True}
+
+@api_router.delete("/qudurat/{item_id}")
+async def delete_qudurat(item_id: str):
+    result = await db.qudurat.delete_one({"id": item_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    return {"deleted": True}
+
+@api_router.get("/qudurat/{item_id}/submission/{student_id}")
+async def get_student_qudurat_submission(item_id: str, student_id: str):
+    submission = await db.qudurat_submissions.find_one({"qudurat_id": item_id, "student_id": student_id}, {"_id": 0})
+    if not submission:
+        return {"submitted": False}
+    if isinstance(submission.get("created_at"), str):
+        submission["created_at"] = datetime.fromisoformat(submission["created_at"])
+    return {"submitted": True, "submission": submission}
+
+@api_router.post("/qudurat/{item_id}/submit")
+async def submit_qudurat(item_id: str, data: QuduratSubmissionCreate):
+    item = await db.qudurat.find_one({"id": item_id})
+    if not item:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    
+    # Check if already submitted
+    existing = await db.qudurat_submissions.find_one({"qudurat_id": item_id, "student_id": data.student_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="تم الرد مسبقاً")
+
+    is_correct = data.answer == item["correct_answer"]
+    points_earned = item["points_question"] if is_correct else 0
+    
+    submission = QuduratSubmission(
+        qudurat_id=item_id,
+        student_id=data.student_id,
+        student_name=data.student_name,
+        answer=data.answer,
+        is_correct=is_correct,
+        summary=data.summary,
+        points_question=points_earned,
+        points_summary_awarded=0,
+        status="pending"
+    )
+    
+    doc = submission.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.qudurat_submissions.insert_one(doc)
+    
+    # Award points for correct answer immediately
+    if points_earned > 0:
+        await db.students.update_one({"id": data.student_id}, {"$inc": {"points": points_earned}})
+        log_entry = {
+            "id": str(uuid.uuid4()),
+            "student_id": data.student_id,
+            "points": points_earned,
+            "reason": f"قدرات - إجابة صحيحة: {item['question']}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.points_log.insert_one(log_entry)
+        
+    return {"success": True, "is_correct": is_correct, "points_earned": points_earned}
+
+@api_router.get("/qudurat/submissions/pending", response_model=List[QuduratSubmission])
+async def get_pending_qudurat_submissions():
+    submissions = await db.qudurat_submissions.find({"status": "pending"}, {"_id": 0}).to_list(1000)
+    for s in submissions:
+        if isinstance(s.get("created_at"), str):
+            s["created_at"] = datetime.fromisoformat(s["created_at"])
+    return submissions
+
+@api_router.post("/qudurat/submissions/{submission_id}/review")
+async def review_qudurat_submission(submission_id: str, review: QuduratReview):
+    sub = await db.qudurat_submissions.find_one({"id": submission_id})
+    if not sub:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    
+    if sub.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="تمت مراجعة هذا الرد مسبقاً")
+        
+    # Get qudurat item info
+    item = await db.qudurat.find_one({"id": sub["qudurat_id"]})
+    video_title = item.get("video_url") if item else "فيديو"
+    
+    # Update status
+    await db.qudurat_submissions.update_one(
+        {"id": submission_id}, 
+        {"$set": {"status": review.status, "points_summary_awarded": review.points}}
+    )
+    
+    # Award points if approved
+    if review.status == "approved" and review.points > 0:
+        await db.students.update_one({"id": sub["student_id"]}, {"$inc": {"points": review.points}})
+        log_entry = {
+            "id": str(uuid.uuid4()),
+            "student_id": sub["student_id"],
+            "points": review.points,
+            "reason": f"قدرات - تلخيص فيديو: {video_title}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.points_log.insert_one(log_entry)
+        
+    return {"success": True}
 
 # ==================== Health Check ====================
 
