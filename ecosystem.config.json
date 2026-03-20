@@ -4,8 +4,8 @@
       "name": "ghiras-backend-main",
       "script": "uvicorn",
       "args": "server:app --host 0.0.0.0 --port 8000",
-      "cwd": "/home/username/ghiras97/backend",
-      "interpreter": "/home/username/ghiras97/backend/venv/bin/python3",
+      "cwd": "/home/ghiras/task3/backend",
+      "interpreter": "/home/ghiras/task3/backend/venv/bin/python3",
       "env": {
         "DB_NAME": "myaboughaith_task3",
         "NODE_ENV": "production"
@@ -23,8 +23,8 @@
       "name": "ghiras-backend-clubbariaa",
       "script": "uvicorn",
       "args": "server:app --host 0.0.0.0 --port 8001",
-      "cwd": "/home/username/ghiras97/backend",
-      "interpreter": "/home/username/ghiras97/backend/venv/bin/python3",
+      "cwd": "/home/ghiras/task3/backend",
+      "interpreter": "/home/ghiras/task3/backend/venv/bin/python3",
       "env": {
         "DB_NAME": "clubbariaa_task3",
         "NODE_ENV": "production"
