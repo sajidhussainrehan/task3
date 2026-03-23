@@ -426,7 +426,7 @@ async def upload_image(student_id: str, file: UploadFile = File(...)):
     content = await file.read()
     image_base64 = base64.b64encode(content).decode()
     
-    await db.students.update_one({"id": student_id}, {"$set": {"image_url": f"data:image/{file.content_type};base64,{image_base64}"}})
+    await db.students.update_one({"id": student_id}, {"$set": {"image_url": f"data:{file.content_type};base64,{image_base64}"}})
     return {"success": True}
 
 # ==================== Groups Endpoints ====================

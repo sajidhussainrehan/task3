@@ -164,7 +164,7 @@ function Dashboard({ onLogout }) {
     formData.append("file", file);
     try {
       await axios.post(`${API}/students/${studentId}/upload-image`, formData, {
-        headers: { ...headers, "Content-Type": "multipart/form-data" }
+        headers: { ...headers }
       });
       showMsg("تم رفع الصورة");
       await fetchStudents();

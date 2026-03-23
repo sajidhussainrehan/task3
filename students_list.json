@@ -1,0 +1,122 @@
+[
+  {
+    "id": "a6ab52cd-c90a-4e09-87ff-f0e00a9734d9",
+    "name": "sdfasd",
+    "supervisor": "abs"
+  },
+  {
+    "id": "8222ed27-8154-4ae0-a761-4796c6d7ef0b",
+    "name": "sdfs",
+    "supervisor": "bcs"
+  },
+  {
+    "id": "de660403-0ced-4184-98d2-e48c122115d1",
+    "name": "هه",
+    "supervisor": "العلماء "
+  },
+  {
+    "id": "9e9f475d-e619-4de1-9461-0d37562d7376",
+    "name": "الاسود",
+    "supervisor": "الاسود"
+  },
+  {
+    "id": "2e2a8775-9543-4f2d-bdd2-825d50738e35",
+    "name": "محمد مفلح",
+    "supervisor": "النخبة"
+  },
+  {
+    "id": "e311d6b9-5e97-41af-8de1-3833dc5ce054",
+    "name": "فراس الوادعي",
+    "supervisor": "النخبة"
+  },
+  {
+    "id": "6525dff3-4060-46e7-94ae-2c7649f8869d",
+    "name": "محمد الوادعي",
+    "supervisor": "النخبة"
+  },
+  {
+    "id": "ab7ce7d6-b0cd-45f5-80bf-c915ec1d1579",
+    "name": "الوليد الحبابي",
+    "supervisor": "النخبة"
+  },
+  {
+    "id": "f513e68e-af53-40c2-9843-9f0615d5c1a6",
+    "name": "رائد الشهراني",
+    "supervisor": "النخبة"
+  },
+  {
+    "id": "407b893d-d122-4d7f-aed7-d6333314d802",
+    "name": "محمد عبد الوهاب",
+    "supervisor": "الصدارة"
+  },
+  {
+    "id": "a8be777b-df00-4b7b-8e1a-53d990518117",
+    "name": "أنس الوادعي",
+    "supervisor": "الصدارة"
+  },
+  {
+    "id": "97ba61c3-0be7-4357-8dd1-d2c35b20c2ad",
+    "name": "بدر الحارثي",
+    "supervisor": "الصدارة"
+  },
+  {
+    "id": "e879f982-c507-4bcd-bf18-28cf9b8527d1",
+    "name": "مسفر الوادعي",
+    "supervisor": "الصدارة"
+  },
+  {
+    "id": "ee0d885a-785d-48ba-8b78-d2fc5d09dff9",
+    "name": "إياد العبدلي",
+    "supervisor": "الصدارة"
+  },
+  {
+    "id": "638eb8fe-b4ef-4e95-9a1c-8b33ddff62d9",
+    "name": "سعيد الحسنية",
+    "supervisor": "الريادة"
+  },
+  {
+    "id": "a5c9da19-5565-471e-83cd-a6adb75f7285",
+    "name": "حسين الشهراني",
+    "supervisor": "الريادة"
+  },
+  {
+    "id": "8e263a4f-4529-4f06-ac5f-2e84d2f6704c",
+    "name": "بسام الشهري",
+    "supervisor": "الريادة"
+  },
+  {
+    "id": "d6c5b523-9cd9-4dc2-912e-a9f54c9e398c",
+    "name": "مهند مبارك",
+    "supervisor": "الريادة"
+  },
+  {
+    "id": "0d0f0484-4511-469d-b411-a7b5d215d627",
+    "name": "حاتم الأحمري",
+    "supervisor": "الريادة"
+  },
+  {
+    "id": "4a8c1433-4cbf-430a-a3ea-998e46e7e764",
+    "name": "فهد الشهراني",
+    "supervisor": "الزعامة"
+  },
+  {
+    "id": "e9af3f8f-4580-4341-8ed9-56a4fd638057",
+    "name": "عبد المجيد الوادعي",
+    "supervisor": "الزعامة"
+  },
+  {
+    "id": "d8aaf54a-ab30-4a75-b8b4-59859613c652",
+    "name": "عبد الملك العمري",
+    "supervisor": "الزعامة"
+  },
+  {
+    "id": "0b18d73c-9aeb-4b6d-957b-7abc079d9ee6",
+    "name": "نايف الشهري",
+    "supervisor": "الزعامة"
+  },
+  {
+    "id": "e6a1b3c3-e01a-4fd9-be86-df88b58e9f3a",
+    "name": "مهند الوادعي",
+    "supervisor": "الزعامة"
+  }
+]
