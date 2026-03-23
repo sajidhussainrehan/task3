@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -16,7 +17,13 @@ function AttendanceManager({ onAttendanceChange }) {
   const [sessionStarted, setSessionStarted] = useState(false);
   const [stats, setStats] = useState({ early: 0, late: 0, absent: 0, total: 0 });
   const [scannedStudent, setScannedStudent] = useState(null);
+  const [useCameraMode, setUseCameraMode] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const inputRef = useRef(null);
+  const scannerRef = useRef(null);
+  const lastScannedRef = useRef(null);
+  const scannerInstanceRef = useRef(null);
 
   // Fetch students list
   const fetchStudents = async () => {
@@ -25,6 +32,126 @@ function AttendanceManager({ onAttendanceChange }) {
       setStudents(res.data);
     } catch (err) {
       console.error("Error fetching students:", err);
+    }
+  };
+
+  // Initialize camera-based barcode scanner
+  const initializeCamera = async () => {
+    if (cameraActive) {
+      // Stop camera
+      if (scannerInstanceRef.current) {
+        try {
+          await scannerInstanceRef.current.clear();
+          scannerInstanceRef.current = null;
+        } catch (e) {
+          console.log("Scanner cleanup:", e);
+        }
+      }
+      setCameraActive(false);
+      setCameraError("");
+      return;
+    }
+
+    try {
+      setCameraError("");
+      setCameraActive(true);
+      lastScannedRef.current = null;
+
+      const scanner = new Html5QrcodeScanner(
+        "barcode-scanner",
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.33,
+          disableFlip: false,
+        },
+        false
+      );
+
+      scannerInstanceRef.current = scanner;
+
+      const onScanSuccess = (decodedText, decodedResult) => {
+        // Prevent duplicate scans within 1 second
+        const now = Date.now();
+        if (lastScannedRef.current && now - lastScannedRef.current < 1000) {
+          return;
+        }
+        lastScannedRef.current = now;
+
+        // Process the barcode
+        processBarcodeData(decodedText);
+      };
+
+      const onScanError = (error) => {
+        // Suppress console error messages for continuous scanning
+      };
+
+      scanner.render(onScanSuccess, onScanError);
+    } catch (err) {
+      console.error("Camera initialization error:", err);
+      setCameraError("❌ لا يمكن الوصول للكاميرا. تأكد من الأذونات");
+      setCameraActive(false);
+    }
+  };
+
+  // Process barcode data (same logic as manual input)
+  const processBarcodeData = async (barcodeData) => {
+    const trimmed = barcodeData.trim();
+    if (!trimmed || !session) return;
+
+    const parsedInput = parseBarcode(trimmed);
+
+    const student = students.find(s => 
+      s.id.toLowerCase() === parsedInput.toLowerCase() ||
+      s.id.toLowerCase() === trimmed.toLowerCase() ||
+      (s.barcode && s.barcode.toLowerCase() === trimmed.toLowerCase()) ||
+      (s.barcode && s.barcode.toLowerCase() === parsedInput.toLowerCase()) ||
+      s.name.includes(trimmed)
+    );
+
+    if (!student) {
+      setMessage("❌ الطالب غير موجود - تأكد من مسح باركود صحيح");
+      setScannedStudent(null);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API}/attendance/${session.id}/scan`, {
+        student_id: student.id,
+        barcode: trimmed
+      });
+
+      if (res.data.already_scanned) {
+        setMessage("⚠️ تم تسجيل حضور هذا الطالب مسبقاً");
+      } else {
+        const { student: scannedStu, status, points } = res.data;
+        setScannedStudent({ ...scannedStu, status, points });
+        setMessage(`${status === "early" ? "✅" : "⚠️"} ${scannedStu.name}: ${status === "early" ? "حضور مبكر" : "حضور متأخر"} (${points > 0 ? "+" : ""}${points} نقطة)`);
+        
+        const newRecord = {
+          id: Date.now().toString(),
+          student_id: scannedStu.id,
+          student_name: scannedStu.name,
+          status,
+          points,
+          scanned_at: new Date().toISOString()
+        };
+        const updatedRecords = [...records, newRecord];
+        setRecords(updatedRecords);
+        updateStats(updatedRecords);
+        
+        if (onAttendanceChange) onAttendanceChange();
+      }
+    } catch (err) {
+      if (err.response?.status === 400) {
+        setMessage("❌ الجلسة منتهية - لا يمكن تسجيل حضور");
+      } else {
+        setMessage("❌ خطأ في مسح الباركود");
+      }
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,6 +171,20 @@ function AttendanceManager({ onAttendanceChange }) {
     }
   };
 
+  // Cleanup camera when component unmounts or camera mode is disabled
+  useEffect(() => {
+    return () => {
+      if (scannerInstanceRef.current && cameraActive) {
+        try {
+          scannerInstanceRef.current.clear();
+        } catch (e) {
+          console.log("Scanner cleanup:", e);
+        }
+      }
+    };
+  }, []);
+
+  // Fetch students and attendance on mount
   useEffect(() => {
     fetchStudents();
     fetchTodayAttendance();
@@ -89,12 +230,19 @@ function AttendanceManager({ onAttendanceChange }) {
     return () => clearInterval(interval);
   }, [session]);
 
-  // Focus input when session is active
+  // Cleanup camera when switching modes or session ends
   useEffect(() => {
-    if (sessionStarted && inputRef.current) {
-      inputRef.current.focus();
+    if (!useCameraMode && cameraActive) {
+      initializeCamera(); // This will stop the camera
     }
-  }, [sessionStarted]);
+  }, [useCameraMode]);
+
+  // Cleanup camera when session ends
+  useEffect(() => {
+    if (session?.is_finalized && cameraActive) {
+      initializeCamera(); // Stop camera when session is finalized
+    }
+  }, [session?.is_finalized]);
 
   const updateStats = (attendanceRecords) => {
     const early = attendanceRecords.filter(r => r.status === "early").length;
@@ -157,67 +305,10 @@ function AttendanceManager({ onAttendanceChange }) {
     e.preventDefault();
     if (!barcodeInput.trim() || !session) return;
 
-    // Parse the barcode input to extract student ID
-    const parsedInput = parseBarcode(barcodeInput);
-
-    // Find student by: extracted ID from QR URL, direct ID match, custom barcode, or name search
-    const student = students.find(s => 
-      s.id.toLowerCase() === parsedInput.toLowerCase() ||
-      s.id.toLowerCase() === barcodeInput.trim().toLowerCase() ||
-      (s.barcode && s.barcode.toLowerCase() === barcodeInput.trim().toLowerCase()) ||
-      (s.barcode && s.barcode.toLowerCase() === parsedInput.toLowerCase()) ||
-      s.name.includes(barcodeInput.trim())
-    );
-
-    if (!student) {
-      setMessage("❌ الطالب غير موجود - تأكد من مسح باركود صحيح");
-      setScannedStudent(null);
-      setBarcodeInput("");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await axios.post(`${API}/attendance/${session.id}/scan`, {
-        student_id: student.id,
-        barcode: barcodeInput
-      });
-
-      if (res.data.already_scanned) {
-        setMessage("⚠️ تم تسجيل حضور هذا الطالب مسبقاً");
-      } else {
-        const { student: scannedStu, status, points } = res.data;
-        setScannedStudent({ ...scannedStu, status, points });
-        setMessage(`${status === "early" ? "✅" : "⚠️"} ${scannedStu.name}: ${status === "early" ? "حضور مبكر" : "حضور متأخر"} (${points > 0 ? "+" : ""}${points} نقطة)`);
-        
-        // Update records
-        const newRecord = {
-          id: Date.now().toString(),
-          student_id: scannedStu.id,
-          student_name: scannedStu.name,
-          status,
-          points,
-          scanned_at: new Date().toISOString()
-        };
-        const updatedRecords = [...records, newRecord];
-        setRecords(updatedRecords);
-        updateStats(updatedRecords);
-        
-        if (onAttendanceChange) onAttendanceChange();
-      }
-    } catch (err) {
-      if (err.response?.status === 400) {
-        setMessage("❌ الجلسة منتهية - لا يمكن تسجيل حضور");
-      } else {
-        setMessage("❌ خطأ في مسح الباركود");
-      }
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setBarcodeInput("");
-      // Refocus input
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
+    await processBarcodeData(barcodeInput);
+    setBarcodeInput("");
+    // Refocus input
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const finalizeAttendance = async () => {
@@ -364,35 +455,109 @@ function AttendanceManager({ onAttendanceChange }) {
             </button>
           )}
 
-          {/* Barcode Input */}
+          {/* Barcode Input - Manual or Camera */}
           {!session?.is_finalized && (
-            <form onSubmit={handleBarcodeSubmit} className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">
-                🔍 مسح الباركود أو إدخال رقم الطالب:
-              </label>
+            <div className="space-y-3">
+              {/* Mode Toggle */}
               <div className="flex gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  placeholder="امسح الباركود هنا..."
-                  className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500 text-lg"
-                  disabled={loading}
-                  autoFocus
-                />
                 <button
-                  type="submit"
-                  disabled={loading || !barcodeInput.trim()}
-                  className="bg-lime-500 hover:bg-lime-600 text-black px-6 py-3 rounded-lg font-bold border-2 border-black disabled:opacity-50"
+                  onClick={() => {
+                    setUseCameraMode(false);
+                    if (cameraActive) initializeCamera();
+                  }}
+                  className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${
+                    !useCameraMode 
+                      ? "bg-lime-500 text-black border-black" 
+                      : "bg-gray-200 text-gray-700 border-gray-300 hover:bg-gray-300"
+                  }`}
                 >
-                  📲 مسح
+                  ⌨️ إدخال يدوي
+                </button>
+                <button
+                  onClick={() => {
+                    setUseCameraMode(true);
+                    initializeCamera();
+                  }}
+                  className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${
+                    useCameraMode 
+                      ? "bg-lime-500 text-black border-black" 
+                      : "bg-gray-200 text-gray-700 border-gray-300 hover:bg-gray-300"
+                  }`}
+                >
+                  📷 مسح بالكاميرا
                 </button>
               </div>
-              <p className="text-xs text-gray-500">
-                💡 يمكنك استخدام قارئ الباركود أو كتابة رقم الطالب يدوياً
-              </p>
-            </form>
+
+              {/* Manual Input Mode */}
+              {!useCameraMode && (
+                <form onSubmit={handleBarcodeSubmit} className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    🔍 مسح الباركود أو إدخال رقم الطالب:
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={barcodeInput}
+                      onChange={(e) => setBarcodeInput(e.target.value)}
+                      placeholder="امسح الباركود أو اكتب رقم الطالب..."
+                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500 text-lg"
+                      disabled={loading}
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading || !barcodeInput.trim()}
+                      className="bg-lime-500 hover:bg-lime-600 text-black px-6 py-3 rounded-lg font-bold border-2 border-black disabled:opacity-50 transition-all"
+                    >
+                      ✓ إرسال
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    💡 استخدم قارئ باركود أو اكتب رقم الطالب مباشرة
+                  </p>
+                </form>
+              )}
+
+              {/* Camera Mode */}
+              {useCameraMode && (
+                <div className="space-y-3">
+                  {cameraError && (
+                    <div className="bg-red-100 border-2 border-red-300 text-red-700 p-3 rounded-lg text-sm font-semibold">
+                      {cameraError}
+                    </div>
+                  )}
+                  
+                  {cameraActive && !cameraError && (
+                    <div className="bg-gray-900 rounded-xl overflow-hidden border-4 border-lime-500">
+                      <div id="barcode-scanner" style={{ width: "100%", minHeight: "300px" }}></div>
+                    </div>
+                  )}
+
+                  {!cameraActive && !cameraError && (
+                    <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                      <p className="text-gray-600 mb-2">🎥 اضغط لبدء الكاميرا</p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={initializeCamera}
+                    disabled={loading}
+                    className={`w-full py-3 rounded-lg font-bold border-2 transition-all ${
+                      cameraActive
+                        ? "bg-red-500 hover:bg-red-600 text-white border-black"
+                        : "bg-lime-500 hover:bg-lime-600 text-black border-black"
+                    }`}
+                  >
+                    {cameraActive ? "⏹️ إيقاف الكاميرا" : "▶️ تشغيل الكاميرا"}
+                  </button>
+
+                  <p className="text-xs text-gray-500 text-center">
+                    💡 وجه الكاميرا نحو الباركود أو رمز QR للمسح التلقائي
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Stats */}
