@@ -10,6 +10,7 @@ import ViewerLinksManager from "./ViewerLinksManager";
 import GroupsManager from "./GroupsManager";
 import AttendanceManager from "./AttendanceManager";
 import QuduratManager from "./QuduratManager";
+import TeacherManagement from "./TeacherManagement";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -26,6 +27,8 @@ const SUPERVISOR_COLORS = [
 function Dashboard({ onLogout }) {
   const [students, setStudents] = useState([]);
   const [supervisors, setSupervisors] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [showTeacherManagement, setShowTeacherManagement] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -64,12 +67,14 @@ function Dashboard({ onLogout }) {
 
   const fetchStudents = useCallback(async () => {
     try {
-      const [studentsRes, groupsRes] = await Promise.all([
+      const [studentsRes, groupsRes, teachersRes] = await Promise.all([
         axios.get(`${API}/students`),
-        axios.get(`${API}/groups`)
+        axios.get(`${API}/groups`),
+        axios.get(`${API}/teachers/list`)
       ]);
       setStudents(studentsRes.data);
       setSupervisors(groupsRes.data.map(g => g.name));
+      setTeachers(teachersRes.data);
     } catch {
       showMsg("خطأ في جلب البيانات");
     }
@@ -258,6 +263,7 @@ function Dashboard({ onLogout }) {
               <button onClick={() => setShowAddStudent(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="add-student-btn">➕ إضافة طالب</button>
               <button onClick={() => setShowQRModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="qr-codes-btn">📱 رموز QR</button>
               <button onClick={() => setShowBulkPoints(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="bulk-points-btn">💎 نقاط جماعية</button>
+              <button onClick={() => setShowTeacherManagement(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold border-2 border-black">👨‍🏫 إدارة المعلمين</button>
             </div>
 
             {/* Stats */}
@@ -407,14 +413,16 @@ function Dashboard({ onLogout }) {
                 {supervisors.length === 0 && <p className="text-xs text-red-500 mt-1">⚠️ أضف مجموعة أولاً من قسم المجموعات</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">📚 اسم المعلم (القرآن)</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-semibold mb-1">📚 المعلم (القرآن)</label>
+                <select
                   value={newTeacher}
                   onChange={e => setNewTeacher(e.target.value)}
                   className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
-                  placeholder="أدخل اسم المعلم"
-                />
+                >
+                  <option value="">اختر المعلم (اختياري)</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                {teachers.length === 0 && <p className="text-xs text-red-500 mt-1">⚠️ أضف معلم أولاً من زر "إدارة المعلمين"</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">📊 رقم الباركود</label>
@@ -454,15 +462,15 @@ function Dashboard({ onLogout }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">📚 اسم المعلم (القرآن)</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-semibold mb-1">📚 المعلم (القرآن)</label>
+                <select
                   value={editTeacher}
                   onChange={e => setEditTeacher(e.target.value)}
                   className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
-                  placeholder="أدخل اسم المعلم (مثال: معلم القرآن)"
-                />
-                <p className="text-xs text-gray-500 mt-1">💡 يمكنك كتابة أي اسم معلم هنا ليتمكن من الدخول وحفظ الدرجات</p>
+                >
+                  <option value="">بدون معلم</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">📊 رقم الباركود</label>
@@ -535,6 +543,11 @@ function Dashboard({ onLogout }) {
           </div>
         </div>
       )}
+      {/* Teacher Management Modal */}
+      {showTeacherManagement && (
+        <TeacherManagement onClose={() => { setShowTeacherManagement(false); fetchStudents(); }} />
+      )}
+
       {/* Footer */}
       <div className="container mx-auto px-4 py-6 text-center">
         <p className="text-sm text-gray-400">Made with ❤️ by Aboughaith</p>

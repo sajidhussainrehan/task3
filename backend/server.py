@@ -47,13 +47,13 @@ class ViewOnlyLoginRequest(BaseModel):
     password: str
 
 class TeacherLoginRequest(BaseModel):
+    username: str
     password: str
 
 # Simple hardcoded credentials (can be moved to env vars)
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "ghiras123")
 VIEWONLY_PASSWORD = os.environ.get("VIEWONLY_PASSWORD", "view123")
-TEACHER_PASSWORD = os.environ.get("TEACHER_PASSWORD", "teacher123")
 
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(data: LoginRequest):
@@ -71,10 +71,69 @@ async def viewonly_login(data: ViewOnlyLoginRequest):
 
 @api_router.post("/auth/teacher-login")
 async def teacher_login(data: TeacherLoginRequest):
-    if data.password == TEACHER_PASSWORD:
+    """Teacher login with username and password from database"""
+    teacher = await db.teachers.find_one({"username": data.username, "password": data.password}, {"_id": 0})
+    if teacher:
         token = str(uuid.uuid4())
-        return {"token": token, "role": "teacher"}
-    raise HTTPException(status_code=401, detail="كلمة المرور غير صحيحة")
+        return {"token": token, "role": "teacher", "teacher_id": teacher["id"], "teacher_name": teacher["name"]}
+    raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+
+# ==================== Teacher Management Endpoints ====================
+
+@api_router.get("/teachers", response_model=List[Teacher])
+async def get_teachers():
+    """Get all teachers"""
+    teachers = await db.teachers.find({}, {"_id": 0}).to_list(1000)
+    for t in teachers:
+        if isinstance(t.get("created_at"), str):
+            t["created_at"] = datetime.fromisoformat(t["created_at"])
+    return teachers
+
+@api_router.post("/teachers", response_model=Teacher)
+async def create_teacher(data: TeacherCreate):
+    """Create a new teacher"""
+    # Check if username already exists
+    existing = await db.teachers.find_one({"username": data.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="اسم المستخدم موجود مسبقاً")
+    
+    teacher = Teacher(**data.model_dump())
+    doc = teacher.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.teachers.insert_one(doc)
+    # Don't return password in response
+    doc.pop("password", None)
+    return teacher
+
+@api_router.put("/teachers/{teacher_id}")
+async def update_teacher(teacher_id: str, data: TeacherUpdate):
+    """Update teacher information"""
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    # Check if new username already exists
+    if "username" in update_data:
+        existing = await db.teachers.find_one({"username": update_data["username"], "id": {"$ne": teacher_id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="اسم المستخدم موجود مسبقاً")
+    
+    result = await db.teachers.update_one({"id": teacher_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="المعلم غير موجود")
+    return {"success": True}
+
+@api_router.delete("/teachers/{teacher_id}")
+async def delete_teacher(teacher_id: str):
+    """Delete a teacher"""
+    result = await db.teachers.delete_one({"id": teacher_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="المعلم غير موجود")
+    return {"deleted": True}
+
+@api_router.get("/teachers/list")
+async def get_teachers_list():
+    """Get list of teacher names for dropdown"""
+    teachers = await db.teachers.find({}, {"_id": 0, "name": 1, "id": 1}).to_list(1000)
+    return [{"id": t["id"], "name": t["name"]} for t in teachers]
 
 # ==================== Pydantic Models ====================
 
@@ -85,7 +144,7 @@ class Student(BaseModel):
     points: int = 0
     phone: Optional[str] = None
     supervisor: Optional[str] = None
-    teacher: Optional[str] = None  # Teacher assignment (1, 2, or 3)
+    teacher_id: Optional[str] = None  # Teacher assignment (ID from teachers collection)
     barcode: Optional[str] = None  # Custom barcode number for attendance scanning
     image_url: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -225,6 +284,25 @@ class HalaqaGradeCreate(BaseModel):
     revision: int = 0
     mutun: int = 0
     notes: str = ""
+
+# ==================== Teacher Models ====================
+
+class Teacher(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    username: str
+    password: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TeacherCreate(BaseModel):
+    name: str
+    username: str
+    password: str
+
+class TeacherUpdate(BaseModel):
+    name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
 
 # ==================== Qudurat Models ====================
 

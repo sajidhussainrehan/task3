@@ -1,29 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
-const TEACHER_NAMES = {}; // Will be filled from backend if needed
-
 function TeacherLogin({ onLogin }) {
-  const [teacherId, setTeacherId] = useState("");
-  const [existingTeachers, setExistingTeachers] = useState([]);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        const res = await axios.get(`${API}/teachers/list`);
-        setExistingTeachers(res.data);
-      } catch (err) {
-        console.error("Error fetching teachers:", err);
-      }
-    };
-    fetchTeachers();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,16 +16,20 @@ function TeacherLogin({ onLogin }) {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${API}/auth/teacher-login`, { password });
+      const res = await axios.post(`${API}/auth/teacher-login`, { 
+        username,
+        password 
+      });
       const teacherData = {
         token: res.data.token,
-        teacherId: teacherId,
-        teacherName: teacherId // Use the name as the ID
+        teacherId: res.data.teacher_id,
+        teacherName: res.data.teacher_name,
+        username: username
       };
       localStorage.setItem("teacher_token", JSON.stringify(teacherData));
       onLogin(teacherData);
     } catch (err) {
-      setError("❌ كلمة المرور غير صحيحة");
+      setError(err.response?.data?.detail || "❌ اسم المستخدم أو كلمة المرور غير صحيحة");
     } finally {
       setLoading(false);
     }
@@ -65,21 +54,15 @@ function TeacherLogin({ onLogin }) {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">اختر أو أضف معلم</label>
+            <label className="block text-sm font-bold text-gray-700 mb-2">اسم المستخدم</label>
             <input
               type="text"
-              list="teachers-list"
-              value={teacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500 text-center font-bold"
-              placeholder="اختر اسمك أو اكتبه هنا..."
+              placeholder="أدخل اسم المستخدم..."
               required
             />
-            <datalist id="teachers-list">
-              {existingTeachers.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
           </div>
 
           <div>
@@ -104,7 +87,7 @@ function TeacherLogin({ onLogin }) {
         </form>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-          <p className="text-blue-800 text-sm font-bold mb-2">� تعليمات:</p>
+          <p className="text-blue-800 text-sm font-bold mb-2">ℹ️ تعليمات:</p>
           <ul className="text-xs text-blue-700 space-y-1">
             <li>• يمكن لكل معلم رؤية طلابه المخصصين فقط</li>
             <li>• أدخل درجات الحفظ والمراجعة والمتون</li>

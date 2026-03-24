@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -35,6 +35,8 @@ function AttendanceManager({ onAttendanceChange }) {
     }
   };
 
+  const [cameraLoading, setCameraLoading] = useState(false);
+
   // Check camera permissions explicitly before initializing scanner
   const checkCameraPermission = async () => {
     try {
@@ -68,6 +70,7 @@ function AttendanceManager({ onAttendanceChange }) {
       return { granted: false, error: errorMessage, originalError: err };
     }
   };
+
   const initializeCamera = async () => {
     if (cameraActive) {
       // Stop camera
@@ -93,45 +96,120 @@ function AttendanceManager({ onAttendanceChange }) {
       return;
     }
 
+    setCameraLoading(true);
+    setCameraError("");
+
     try {
-      setCameraError("");
-      setCameraActive(true);
       lastScannedRef.current = null;
 
-      const scanner = new Html5QrcodeScanner(
-        "barcode-scanner",
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.33,
-          disableFlip: false,
-        },
-        false
-      );
+      // Small delay to ensure DOM element is fully rendered and ready
+      await new Promise(resolve => setTimeout(resolve, 500));
 
+      // Ensure DOM element exists
+      const scannerElement = document.getElementById("barcode-scanner");
+      if (!scannerElement) {
+        console.error("Scanner element not found in DOM");
+        throw new Error("Scanner element not ready");
+      }
+      console.log("Scanner element found:", scannerElement);
+
+      console.log("Creating Html5Qrcode instance...");
+
+      // Create scanner instance
+      const scanner = new Html5Qrcode("barcode-scanner");
       scannerInstanceRef.current = scanner;
 
       const onScanSuccess = (decodedText, decodedResult) => {
-        // Prevent duplicate scans within 1 second
         const now = Date.now();
         if (lastScannedRef.current && now - lastScannedRef.current < 1000) {
           return;
         }
         lastScannedRef.current = now;
-
-        // Process the barcode
         processBarcodeData(decodedText);
       };
 
       const onScanError = (error) => {
-        // Suppress console error messages for continuous scanning
+        // Suppress continuous scanning errors
       };
 
-      scanner.render(onScanSuccess, onScanError);
+      console.log("Starting camera...");
+      
+      // Try environment camera first, then fallback to any camera
+      let cameraStarted = false;
+      
+      // First try: environment facing camera
+      try {
+        console.log("Trying environment camera...");
+        await scanner.start(
+          { facingMode: { exact: "environment" } },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
+          onScanSuccess,
+          onScanError
+        );
+        cameraStarted = true;
+        console.log("Environment camera started successfully");
+      } catch (envError) {
+        console.log("Environment camera failed:", envError.message);
+      }
+      
+      // Second try: any available camera
+      if (!cameraStarted) {
+        try {
+          console.log("Trying any available camera...");
+          await scanner.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0
+            },
+            onScanSuccess,
+            onScanError
+          );
+          cameraStarted = true;
+          console.log("Camera started successfully with fallback");
+        } catch (anyError) {
+          console.log("Fallback camera failed:", anyError.message);
+        }
+      }
+      
+      if (!cameraStarted) {
+        throw new Error("Could not start any camera");
+      }
+      
+      setCameraActive(true);
+      
     } catch (err) {
-      console.error("Camera initialization error:", err);
-      setCameraError("❌ لا يمكن الوصول للكاميرا. تأكد من الأذونات");
+      console.error("Camera error:", err);
+      let errorMessage = "❌ لا يمكن فتح الكاميرا";
+      
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        errorMessage = "❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح";
+      } else if (err.name === "NotFoundError") {
+        errorMessage = "❌ لم يتم العثور على كاميرا. تأكد من توصيل الكاميرا";
+      } else if (err.name === "NotReadableError") {
+        errorMessage = "❌ الكاميرا مشغولة من تطبيق آخر";
+      } else if (err.message && err.message.includes("Permission")) {
+        errorMessage = "❌ تم رفض إذن الكاميرا";
+      } else if (err.message) {
+        errorMessage = `❌ خطأ: ${err.message}`;
+      }
+      
+      setCameraError(errorMessage);
       setCameraActive(false);
+      
+      if (scannerInstanceRef.current) {
+        try {
+          await scannerInstanceRef.current.stop();
+        } catch (e) {}
+        scannerInstanceRef.current = null;
+      }
+    } finally {
+      setCameraLoading(false);
     }
   };
 
@@ -215,9 +293,9 @@ function AttendanceManager({ onAttendanceChange }) {
   // Cleanup camera when component unmounts or camera mode is disabled
   useEffect(() => {
     return () => {
-      if (scannerInstanceRef.current && cameraActive) {
+      if (scannerInstanceRef.current) {
         try {
-          scannerInstanceRef.current.clear();
+          scannerInstanceRef.current.stop();
         } catch (e) {
           console.log("Scanner cleanup:", e);
         }
@@ -569,11 +647,14 @@ function AttendanceManager({ onAttendanceChange }) {
                     </div>
                   )}
                   
-                  {cameraActive && !cameraError && (
-                    <div className="bg-gray-900 rounded-xl overflow-hidden border-4 border-lime-500">
-                      <div id="barcode-scanner" style={{ width: "100%", minHeight: "300px" }}></div>
-                    </div>
-                  )}
+                  {/* Scanner container - always render but hide when not active */}
+                  <div 
+                    className={`bg-gray-900 rounded-xl overflow-hidden border-4 border-lime-500 ${
+                      cameraActive && !cameraError ? 'block' : 'hidden'
+                    }`}
+                  >
+                    <div id="barcode-scanner" style={{ width: "100%", minHeight: "300px" }}></div>
+                  </div>
 
                   {!cameraActive && !cameraError && (
                     <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
@@ -581,16 +662,22 @@ function AttendanceManager({ onAttendanceChange }) {
                     </div>
                   )}
 
+                  {cameraLoading && (
+                    <div className="bg-blue-50 border-2 border-blue-300 text-blue-700 p-3 rounded-lg text-center">
+                      <p>⏳ جاري تشغيل الكاميرا...</p>
+                    </div>
+                  )}
+
                   <button
                     onClick={initializeCamera}
-                    disabled={loading}
+                    disabled={loading || cameraLoading}
                     className={`w-full py-3 rounded-lg font-bold border-2 transition-all ${
                       cameraActive
                         ? "bg-red-500 hover:bg-red-600 text-white border-black"
                         : "bg-lime-500 hover:bg-lime-600 text-black border-black"
-                    }`}
+                    } ${cameraLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {cameraActive ? "⏹️ إيقاف الكاميرا" : "▶️ تشغيل الكاميرا"}
+                    {cameraLoading ? "⏳ جاري التشغيل..." : cameraActive ? "⏹️ إيقاف الكاميرا" : "▶️ تشغيل الكاميرا"}
                   </button>
 
                   <p className="text-xs text-gray-500 text-center">
