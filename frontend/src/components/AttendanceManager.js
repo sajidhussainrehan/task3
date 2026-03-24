@@ -35,7 +35,39 @@ function AttendanceManager({ onAttendanceChange }) {
     }
   };
 
-  // Initialize camera-based barcode scanner
+  // Check camera permissions explicitly before initializing scanner
+  const checkCameraPermission = async () => {
+    try {
+      // First check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("getUserMedia not supported");
+      }
+
+      // Try to access camera to trigger permission prompt
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Stop the test stream immediately
+      stream.getTracks().forEach(track => track.stop());
+      return { granted: true };
+    } catch (err) {
+      let errorMessage = "❌ لا يمكن الوصول للكاميرا. تأكد من الأذونات";
+      
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        errorMessage = "❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول للكاميرا في إعدادات المتصفح";
+      } else if (err.name === "NotFoundError") {
+        errorMessage = "❌ لم يتم العثور على كاميرا. تأكد من توصيل الكاميرا";
+      } else if (err.name === "NotReadableError" || err.name === "AbortError") {
+        errorMessage = "❌ الكاميرا مشغولة من تطبيق آخر. أغلق التطبيقات الأخرى";
+      } else if (err.name === "OverconstrainedError") {
+        errorMessage = "❌ الكاميرا لا تدعم الإعدادات المطلوبة";
+      } else if (err.name === "SecurityError") {
+        errorMessage = "❌ الوصول للكاميرا محظور. استخدم HTTPS أو localhost";
+      } else if (err.message === "getUserMedia not supported") {
+        errorMessage = "❌ المتصفح لا يدعم الوصول للكاميرا. استخدم متصفح حديث";
+      }
+      
+      return { granted: false, error: errorMessage, originalError: err };
+    }
+  };
   const initializeCamera = async () => {
     if (cameraActive) {
       // Stop camera
@@ -49,6 +81,15 @@ function AttendanceManager({ onAttendanceChange }) {
       }
       setCameraActive(false);
       setCameraError("");
+      return;
+    }
+
+    // Check permissions first
+    const permissionCheck = await checkCameraPermission();
+    if (!permissionCheck.granted) {
+      console.error("Camera permission denied:", permissionCheck.originalError);
+      setCameraError(permissionCheck.error);
+      setCameraActive(false);
       return;
     }
 
