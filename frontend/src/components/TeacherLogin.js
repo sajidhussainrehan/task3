@@ -4,17 +4,26 @@ import axios from "axios";
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
-const TEACHER_NAMES = {
-  "1": "المعلم الأول",
-  "2": "المعلم الثاني",
-  "3": "المعلم الثالث"
-};
+const TEACHER_NAMES = {}; // Will be filled from backend if needed
 
 function TeacherLogin({ onLogin }) {
-  const [teacherId, setTeacherId] = useState("1");
+  const [teacherId, setTeacherId] = useState("");
+  const [existingTeachers, setExistingTeachers] = useState([]);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const res = await axios.get(`${API}/teachers/list`);
+        setExistingTeachers(res.data);
+      } catch (err) {
+        console.error("Error fetching teachers:", err);
+      }
+    };
+    fetchTeachers();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +35,7 @@ function TeacherLogin({ onLogin }) {
       const teacherData = {
         token: res.data.token,
         teacherId: teacherId,
-        teacherName: TEACHER_NAMES[teacherId]
+        teacherName: teacherId // Use the name as the ID
       };
       localStorage.setItem("teacher_token", JSON.stringify(teacherData));
       onLogin(teacherData);
@@ -56,23 +65,21 @@ function TeacherLogin({ onLogin }) {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">اختر المعلم</label>
-            <div className="grid grid-cols-3 gap-2">
-              {["1", "2", "3"].map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTeacherId(id)}
-                  className={`p-3 rounded-lg border-2 font-bold text-sm transition-all ${
-                    teacherId === id
-                      ? "bg-lime-500 border-black text-black shadow-lg"
-                      : "bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {TEACHER_NAMES[id]}
-                </button>
+            <label className="block text-sm font-bold text-gray-700 mb-3">اختر أو أضف معلم</label>
+            <input
+              type="text"
+              list="teachers-list"
+              value={teacherId}
+              onChange={(e) => setTeacherId(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-lime-500 text-center font-bold"
+              placeholder="اختر اسمك أو اكتبه هنا..."
+              required
+            />
+            <datalist id="teachers-list">
+              {existingTeachers.map((name) => (
+                <option key={name} value={name} />
               ))}
-            </div>
+            </datalist>
           </div>
 
           <div>

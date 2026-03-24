@@ -331,18 +331,24 @@ async def get_students_by_teacher(teacher_id: str):
     students.sort(key=lambda x: x["points"], reverse=True)
     return students
 
+@api_router.get("/teachers/list")
+async def get_teachers_list():
+    """Get unique names of all assigned teachers"""
+    teachers = await db.students.distinct("teacher")
+    # Filter out None or empty strings
+    teachers = [t for t in teachers if t and str(t).strip()]
+    return teachers
+
 @api_router.get("/teachers/stats")
 async def get_teacher_stats():
     """Get count of students assigned to each teacher"""
     pipeline = [
-        {"$match": {"teacher": {"$in": ["1", "2", "3"]}}},
+        {"$match": {"teacher": {"$exists": True, "$ne": None, "$ne": ""}}},
         {"$group": {"_id": "$teacher", "count": {"$sum": 1}}}
     ]
     results = await db.students.aggregate(pipeline).to_list(1000)
-    stats = {"1": 0, "2": 0, "3": 0}
-    for r in results:
-        if r["_id"] in stats:
-            stats[r["_id"]] = r["count"]
+    # Convert to a more convenient dict
+    stats = {r["_id"]: r["count"] for r in results}
     return stats
 
 @api_router.get("/students/{student_id}/profile")

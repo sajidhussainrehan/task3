@@ -39,6 +39,7 @@ function Dashboard({ onLogout }) {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newSupervisor, setNewSupervisor] = useState("");
+  const [newTeacher, setNewTeacher] = useState("");
   const [newBarcode, setNewBarcode] = useState("");
 
   // Bulk points
@@ -90,12 +91,18 @@ function Dashboard({ onLogout }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/students`, { name: newName, phone: newPhone, supervisor: newSupervisor, barcode: newBarcode || undefined }, { headers });
+      const res = await axios.post(`${API}/students`, { 
+        name: newName, 
+        phone: newPhone, 
+        supervisor: newSupervisor, 
+        teacher: newTeacher,
+        barcode: newBarcode || undefined 
+      }, { headers });
       // Instantly add the new student to the local list so it appears without refresh
       if (res.data) {
         setStudents(prev => [...prev, res.data].sort((a, b) => (b.points || 0) - (a.points || 0)));
       }
-      setNewName(""); setNewPhone(""); setNewSupervisor(""); setNewBarcode("");
+      setNewName(""); setNewPhone(""); setNewSupervisor(""); setNewTeacher(""); setNewBarcode("");
       setShowAddStudent(false);
       showMsg("تمت إضافة الطالب بنجاح");
       // Also refresh from server in background (non-blocking)
@@ -400,6 +407,16 @@ function Dashboard({ onLogout }) {
                 {supervisors.length === 0 && <p className="text-xs text-red-500 mt-1">⚠️ أضف مجموعة أولاً من قسم المجموعات</p>}
               </div>
               <div>
+                <label className="block text-sm font-semibold mb-1">📚 اسم المعلم (القرآن)</label>
+                <input
+                  type="text"
+                  value={newTeacher}
+                  onChange={e => setNewTeacher(e.target.value)}
+                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
+                  placeholder="أدخل اسم المعلم"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-semibold mb-1">📊 رقم الباركود</label>
                 <input type="text" value={newBarcode} onChange={e => setNewBarcode(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500" placeholder="رقم باركود الطالب (اختياري)" data-testid="new-student-barcode" />
                 <p className="text-xs text-gray-500 mt-1">💡 يُستخدم لتسجيل الحضور بمسح الباركود</p>
@@ -437,14 +454,15 @@ function Dashboard({ onLogout }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">📚 معلم القرآن</label>
-                <select value={editTeacher} onChange={e => setEditTeacher(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500">
-                  <option value="">بدون معلم</option>
-                  <option value="1">المعلم الأول</option>
-                  <option value="2">المعلم الثاني</option>
-                  <option value="3">المعلم الثالث</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">💡 يمكن تعيين الطالب إلى أحد 3 معلمين للقرآن</p>
+                <label className="block text-sm font-semibold mb-1">📚 اسم المعلم (القرآن)</label>
+                <input
+                  type="text"
+                  value={editTeacher}
+                  onChange={e => setEditTeacher(e.target.value)}
+                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
+                  placeholder="أدخل اسم المعلم (مثال: معلم القرآن)"
+                />
+                <p className="text-xs text-gray-500 mt-1">💡 يمكنك كتابة أي اسم معلم هنا ليتمكن من الدخول وحفظ الدرجات</p>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">📊 رقم الباركود</label>
