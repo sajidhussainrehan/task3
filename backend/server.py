@@ -429,6 +429,81 @@ async def get_teacher_stats():
     stats = {r["_id"]: r["count"] for r in results}
     return stats
 
+# ==================== Teachers CRUD Endpoints ====================
+
+@api_router.get("/teachers", response_model=List[Teacher])
+async def get_teachers():
+    """Get all teachers from the teachers collection"""
+    teachers = await db.teachers.find({}, {"_id": 0}).to_list(1000)
+    for t in teachers:
+        if isinstance(t.get("created_at"), str):
+            t["created_at"] = datetime.fromisoformat(t["created_at"])
+    return sorted(teachers, key=lambda x: x.get("name", ""))
+
+@api_router.post("/teachers", response_model=Teacher)
+async def create_teacher(data: TeacherCreate):
+    """Create a new teacher with unique username"""
+    # Check if username already exists
+    existing = await db.teachers.find_one({"username": data.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="اسم المستخدم موجود مسبقاً")
+    
+    teacher = Teacher(**data.model_dump())
+    doc = teacher.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.teachers.insert_one(doc)
+    return teacher
+
+@api_router.put("/teachers/{teacher_id}", response_model=Teacher)
+async def update_teacher(teacher_id: str, data: TeacherUpdate):
+    """Update teacher data"""
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    # Check if new username already exists (if updating username)
+    if "username" in update_data:
+        existing = await db.teachers.find_one({
+            "username": update_data["username"],
+            "id": {"$ne": teacher_id}
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail="اسم المستخدم موجود مسبقاً")
+    
+    result = await db.teachers.update_one({"id": teacher_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="المعلم غير موجود")
+    
+    updated = await db.teachers.find_one({"id": teacher_id}, {"_id": 0})
+    if isinstance(updated.get("created_at"), str):
+        updated["created_at"] = datetime.fromisoformat(updated["created_at"])
+    return updated
+
+@api_router.delete("/teachers/{teacher_id}")
+async def delete_teacher(teacher_id: str):
+    """Delete a teacher"""
+    result = await db.teachers.delete_one({"id": teacher_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="المعلم غير موجود")
+    return {"deleted": True}
+
+class TeacherLoginRequest(BaseModel):
+    username: str
+    password: str
+
+@api_router.post("/auth/teacher-login")
+async def teacher_login(data: TeacherLoginRequest):
+    """Authenticate teacher with username and password"""
+    teacher = await db.teachers.find_one({"username": data.username})
+    if not teacher or teacher["password"] != data.password:
+        raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+    
+    token = str(uuid.uuid4())
+    return {
+        "token": token,
+        "role": "teacher",
+        "teacher_id": teacher["id"],
+        "teacher_name": teacher["name"]
+    }
+
 @api_router.get("/students/{student_id}/profile")
 async def get_student_profile(student_id: str):
     # Get all students to calculate rank
