@@ -50,6 +50,23 @@ class TeacherLoginRequest(BaseModel):
     username: str
     password: str
 
+class Teacher(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    username: str
+    password: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TeacherCreate(BaseModel):
+    name: str
+    username: str
+    password: str
+
+class TeacherUpdate(BaseModel):
+    name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+
 # Simple hardcoded credentials (can be moved to env vars)
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "ghiras123")
@@ -285,25 +302,6 @@ class HalaqaGradeCreate(BaseModel):
     mutun: int = 0
     notes: str = ""
 
-# ==================== Teacher Models ====================
-
-class Teacher(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    username: str
-    password: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class TeacherCreate(BaseModel):
-    name: str
-    username: str
-    password: str
-
-class TeacherUpdate(BaseModel):
-    name: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-
 # ==================== Qudurat Models ====================
 
 class QuduratItem(BaseModel):
@@ -484,10 +482,6 @@ async def delete_teacher(teacher_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="المعلم غير موجود")
     return {"deleted": True}
-
-class TeacherLoginRequest(BaseModel):
-    username: str
-    password: str
 
 @api_router.post("/auth/teacher-login")
 async def teacher_login(data: TeacherLoginRequest):
