@@ -9,6 +9,7 @@ import ViewOnlyLogin from "./components/ViewOnlyLogin";
 import ViewOnlyDashboard from "./components/ViewOnlyDashboard";
 import TeacherLogin from "./components/TeacherLogin";
 import TeacherDashboard from "./components/TeacherDashboard";
+import GlobalLoader from "./components/GlobalLoader";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("ghiras_token"));
@@ -53,6 +54,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <GlobalLoader />
       <Routes>
         <Route 
           path="/" 
