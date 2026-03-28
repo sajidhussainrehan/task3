@@ -150,7 +150,8 @@ async def delete_teacher(teacher_id: str):
 async def get_teachers_list():
     """Get list of teacher names for dropdown"""
     teachers = await db.teachers.find({}, {"_id": 0, "name": 1, "id": 1}).to_list(1000)
-    return [{"id": t["id"], "name": t["name"]} for t in teachers]
+    # Ensure we return at least an empty list and each item has the expected structure
+    return [{"id": t.get("id", ""), "name": t.get("name", "Unknown")} for t in teachers]
 
 # ==================== Pydantic Models ====================
 
@@ -244,6 +245,8 @@ class LeagueStar(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     student_id: str
     student_name: str
+    image_url: Optional[str] = None
+    image: Optional[str] = None
     week: int
     reason: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -251,6 +254,8 @@ class LeagueStar(BaseModel):
 class LeagueStarCreate(BaseModel):
     student_id: str
     student_name: str
+    image_url: Optional[str] = None
+    image: Optional[str] = None
     reason: str = ""
 
 class PointsLog(BaseModel):
@@ -862,11 +867,19 @@ async def get_league_stars():
 @api_router.post("/league-star", response_model=LeagueStar)
 async def set_league_star(data: LeagueStarCreate):
     week = datetime.now(timezone.utc).isocalendar()[1]
-    star = LeagueStar(**data.model_dump(), week=week)
-    doc = star.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
-    await db.league_star.insert_one(doc)
-    return star
+    star_id = str(uuid.uuid4())
+    star_doc = {
+        "id": star_id,
+        "student_id": data.student_id,
+        "student_name": data.student_name,
+        "image_url": data.image_url or data.image,
+        "reason": data.reason,
+        "week": week,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.league_star.insert_one(star_doc)
+    # Return as model
+    return LeagueStar(**star_doc)
 
 @api_router.delete("/league-star/{star_id}")
 async def delete_league_star(star_id: str):
