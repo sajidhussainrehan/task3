@@ -70,19 +70,6 @@ export const GlobalLoader = () => {
                 className="h-[4px] bg-gradient-to-r from-lime-400 via-green-500 to-emerald-600 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(163,230,53,0.8)]"
                 style={{ width: `${progress}%` }}
             />
-            
-            {/* Subtle center spinner for long initial loads */}
-            {loading && progress < 40 && (
-                <div className="fixed inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center animate-fadeIn pointer-events-auto">
-                    <div className="relative group scale-150">
-                        <div className="w-12 h-12 border-4 border-lime-200 border-t-lime-600 rounded-full animate-spin"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xl animate-pulse">🌟</span>
-                        </div>
-                        <p className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-sm font-bold text-lime-800 tracking-widest animate-pulse">جاري التحميل...</p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
