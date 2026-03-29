@@ -11,6 +11,7 @@ function TeacherDashboard({ onLogout, teacherData }) {
   const [message, setMessage] = useState("");
   const [halaqaHistory, setHalaqaHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Get teacher info
   const teacherId = teacherData?.teacherId || "1";
@@ -29,6 +30,8 @@ function TeacherDashboard({ onLogout, teacherData }) {
     } catch (err) {
       console.error(err);
       showMsg("❌ خطأ في تحميل الطلاب");
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -96,6 +99,25 @@ function TeacherDashboard({ onLogout, teacherData }) {
       showMsg("❌ خطأ في الحذف");
     }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 animate-fadeIn" dir="rtl">
+        <div className="relative group scale-150 mb-8">
+          <div className="w-16 h-16 border-4 border-lime-200 border-t-lime-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center animate-pulse">
+             <span className="text-2xl">🌟</span>
+          </div>
+        </div>
+        <div className="text-center space-y-3">
+          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-600 to-green-800 tracking-tight text-black">
+            جاري تهيئة لوحة المعلم...
+          </h2>
+          <p className="text-green-600 font-medium animate-pulse">يرجى الانتظار قليلاً</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">

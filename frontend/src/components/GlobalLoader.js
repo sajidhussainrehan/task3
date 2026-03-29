@@ -7,41 +7,49 @@ export const GlobalLoader = () => {
 
     useEffect(() => {
         let timer;
+        let activeRequests = 0;
         
+        const startLoading = () => {
+            activeRequests++;
+            if (activeRequests === 1) {
+                setLoading(true);
+                setProgress(15);
+                timer = setInterval(() => {
+                    setProgress((prev) => {
+                        if (prev >= 90) return 90;
+                        return prev + 2;
+                    });
+                }, 300);
+            }
+        };
+
+        const stopLoading = () => {
+            activeRequests--;
+            if (activeRequests <= 0) {
+                activeRequests = 0;
+                clearInterval(timer);
+                setProgress(100);
+                setTimeout(() => {
+                    setLoading(false);
+                    setProgress(0);
+                }, 400);
+            }
+        };
+
         // Intercept requests
         const requestInterceptor = axios.interceptors.request.use((config) => {
-            setLoading(true);
-            setProgress(15);
-            
-            // Advance progress slowly
-            timer = setInterval(() => {
-                setProgress((prev) => {
-                    if (prev >= 90) return 90;
-                    return prev + 2;
-                });
-            }, 300);
-            
+            startLoading();
             return config;
         });
 
         // Intercept responses
         const responseInterceptor = axios.interceptors.response.use(
             (response) => {
-                clearInterval(timer);
-                setProgress(100);
-                setTimeout(() => {
-                    setLoading(false);
-                    setProgress(0);
-                }, 400);
+                stopLoading();
                 return response;
             },
             (error) => {
-                clearInterval(timer);
-                setProgress(100);
-                setTimeout(() => {
-                    setLoading(false);
-                    setProgress(0);
-                }, 400);
+                stopLoading();
                 return Promise.reject(error);
             }
         );

@@ -36,6 +36,7 @@ function Dashboard({ onLogout }) {
   const [activeSection, setActiveSection] = useState("groups");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [leagueStar, setLeagueStar] = useState(null);
 
   // Add student form
@@ -65,32 +66,28 @@ function Dashboard({ onLogout }) {
     setTimeout(() => setMessage(""), 3000);
   };
 
-  const fetchStudents = useCallback(async () => {
+  const fetchAllData = useCallback(async () => {
     try {
-      const [studentsRes, groupsRes, teachersRes] = await Promise.all([
+      const [studentsRes, groupsRes, teachersRes, starRes] = await Promise.all([
         axios.get(`${API}/students`),
         axios.get(`${API}/groups`),
-        axios.get(`${API}/teachers/list`)
+        axios.get(`${API}/teachers/list`),
+        axios.get(`${API}/league-star`).catch(() => ({ data: null }))
       ]);
       setStudents(studentsRes.data);
       setSupervisors(groupsRes.data.map(g => g.name));
       setTeachers(teachersRes.data);
+      setLeagueStar(starRes.data);
     } catch {
       showMsg("خطأ في جلب البيانات");
+    } finally {
+      setIsInitialLoading(false);
     }
   }, []);
 
-  const fetchLeagueStar = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API}/league-star`);
-      setLeagueStar(res.data);
-    } catch { /* ignore */ }
-  }, []);
-
   useEffect(() => {
-    fetchStudents();
-    fetchLeagueStar();
-  }, [fetchStudents, fetchLeagueStar]);
+    fetchAllData();
+  }, [fetchAllData]);
 
   const addStudent = async (e) => {
     e.preventDefault();
@@ -111,7 +108,7 @@ function Dashboard({ onLogout }) {
       setShowAddStudent(false);
       showMsg("تمت إضافة الطالب بنجاح");
       // Also refresh from server in background (non-blocking)
-      fetchStudents().catch(() => {});
+      fetchAllData();
     } catch {
       showMsg("خطأ في إضافة الطالب");
     } finally { setLoading(false); }
@@ -126,7 +123,7 @@ function Dashboard({ onLogout }) {
       setStudents(prev => prev.map(s => s.id === editStudent.id ? { ...s, name: editName, phone: editPhone, supervisor: editSupervisor, teacher: editTeacher, barcode: editBarcode || undefined } : s));
       setEditStudent(null);
       showMsg("تم تحديث بيانات الطالب");
-      fetchStudents().catch(() => {});
+      fetchAllData();
     } catch {
       showMsg("خطأ في التحديث");
     } finally { setLoading(false); }
@@ -139,7 +136,7 @@ function Dashboard({ onLogout }) {
       // Instantly remove from local state
       setStudents(prev => prev.filter(s => s.id !== id));
       showMsg("تم حذف الطالب");
-      fetchStudents().catch(() => {});
+      fetchAllData();
     } catch {
       showMsg("خطأ في الحذف");
     }
@@ -151,7 +148,7 @@ function Dashboard({ onLogout }) {
       await axios.put(`${API}/students/${studentId}/points`, { points, reason }, { headers });
       showMsg(`تم ${points > 0 ? 'إضافة' : 'خصم'} ${Math.abs(points)} نقطة`);
       setSelectedStudent(null);
-      await fetchStudents();
+      await fetchAllData();
     } catch {
       showMsg("خطأ في تحديث النقاط");
     } finally { setLoading(false); }
@@ -165,7 +162,7 @@ function Dashboard({ onLogout }) {
       showMsg("تم تحديث نقاط المجموعة");
       setShowBulkPoints(false);
       setBulkGroup(""); setBulkPoints(""); setBulkReason("");
-      await fetchStudents();
+      await fetchAllData();
     } catch (err) {
       showMsg(err.response?.data?.detail || "خطأ");
     } finally { setLoading(false); }
@@ -179,7 +176,7 @@ function Dashboard({ onLogout }) {
         headers: { ...headers }
       });
       showMsg("تم رفع الصورة");
-      await fetchStudents();
+      await fetchAllData();
     } catch {
       showMsg("خطأ في رفع الصورة");
     }
@@ -198,6 +195,25 @@ function Dashboard({ onLogout }) {
     { id: "viewers", label: "روابط المشاهدة", icon: "🔗" },
     { id: "qudurat", label: "القدرات", icon: "🍿" },
   ];
+
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 animate-fadeIn" dir="rtl">
+        <div className="relative group scale-150 mb-8">
+          <div className="w-16 h-16 border-4 border-lime-200 border-t-lime-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center animate-pulse">
+             <span className="text-2xl">🌟</span>
+          </div>
+        </div>
+        <div className="text-center space-y-3">
+          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-600 to-green-800 tracking-tight text-black">
+            جاري تحميل البيانات...
+          </h2>
+          <p className="text-green-600 font-medium animate-pulse">يرجى الانتظار قليلاً</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
@@ -363,7 +379,7 @@ function Dashboard({ onLogout }) {
         {/* ===== Attendance Section ===== */}
         {activeSection === "attendance" && (
           <div className="space-y-4">
-            <AttendanceManager onAttendanceChange={fetchStudents} />
+            <AttendanceManager onAttendanceChange={fetchAllData} />
           </div>
         )}
 
@@ -545,7 +561,7 @@ function Dashboard({ onLogout }) {
       )}
       {/* Teacher Management Modal */}
       {showTeacherManagement && (
-        <TeacherManagement onClose={() => { setShowTeacherManagement(false); fetchStudents(); }} />
+        <TeacherManagement onClose={() => { setShowTeacherManagement(false); fetchAllData(); }} />
       )}
 
       {/* Footer */}

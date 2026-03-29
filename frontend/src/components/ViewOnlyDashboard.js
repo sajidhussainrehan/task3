@@ -15,6 +15,7 @@ function ViewOnlyDashboard({ onLogout }) {
   const [competitions, setCompetitions] = useState([]);
   const [activeTab, setActiveTab] = useState("students");
   const [leagueStar, setLeagueStar] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const fetchData = async () => {
     try {
@@ -34,6 +35,8 @@ function ViewOnlyDashboard({ onLogout }) {
       setCompetitions(competitionsRes.data || []);
     } catch (err) {
       console.error(err);
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -60,6 +63,25 @@ function ViewOnlyDashboard({ onLogout }) {
     const date = new Date(dateStr);
     return date.toLocaleDateString("ar-SA");
   };
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 animate-fadeIn" dir="rtl">
+        <div className="relative group scale-150 mb-8">
+          <div className="w-16 h-16 border-4 border-lime-200 border-t-lime-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center animate-pulse">
+             <span className="text-2xl">🌟</span>
+          </div>
+        </div>
+        <div className="text-center space-y-3">
+          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-600 to-green-800 tracking-tight text-black">
+            جاري تهيئة لوحة التحكم...
+          </h2>
+          <p className="text-green-600 font-medium animate-pulse">يرجى الانتظار قليلاً</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
