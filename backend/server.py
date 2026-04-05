@@ -171,13 +171,14 @@ class StudentCreate(BaseModel):
     name: str
     phone: Optional[str] = None
     supervisor: Optional[str] = None
+    teacher_id: Optional[str] = None
     barcode: Optional[str] = None
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     supervisor: Optional[str] = None
-    teacher: Optional[str] = None  # Allow updating teacher assignment
+    teacher_id: Optional[str] = None  # Consistent with Student model
     barcode: Optional[str] = None
 
 class PointsUpdate(BaseModel):
@@ -381,8 +382,8 @@ class AttendanceRecord(BaseModel):
 
 @api_router.get("/students", response_model=List[Student])
 async def get_students():
-    """Retrieve all students sorted by points"""
-    students = await db.students.find({}, {"_id": 0}).to_list(1000)
+    """Retrieve all students sorted by points. Excludes image_url for performance (large base64)."""
+    students = await db.students.find({}, {"_id": 0, "image_url": 0}).to_list(1000)
     for s in students:
         if isinstance(s.get("created_at"), str):
             try:
@@ -402,35 +403,6 @@ async def create_student(data: StudentCreate):
     await db.students.insert_one(doc)
     return student
 
-@api_router.get("/students/by-teacher/{teacher_id}")
-async def get_students_by_teacher(teacher_id: str):
-    """Get all students assigned to a specific teacher (1, 2, or 3)"""
-    students = await db.students.find({"teacher": teacher_id}, {"_id": 0}).to_list(1000)
-    for s in students:
-        if isinstance(s.get("created_at"), str):
-            s["created_at"] = datetime.fromisoformat(s["created_at"])
-    students.sort(key=lambda x: x["points"], reverse=True)
-    return students
-
-@api_router.get("/teachers/list")
-async def get_teachers_list():
-    """Get unique names of all assigned teachers"""
-    teachers = await db.students.distinct("teacher")
-    # Filter out None or empty strings
-    teachers = [t for t in teachers if t and str(t).strip()]
-    return teachers
-
-@api_router.get("/teachers/stats")
-async def get_teacher_stats():
-    """Get count of students assigned to each teacher"""
-    pipeline = [
-        {"$match": {"teacher": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$group": {"_id": "$teacher", "count": {"$sum": 1}}}
-    ]
-    results = await db.students.aggregate(pipeline).to_list(1000)
-    # Convert to a more convenient dict
-    stats = {r["_id"]: r["count"] for r in results}
-    return stats
 
 # ==================== Teachers CRUD Endpoints ====================
 

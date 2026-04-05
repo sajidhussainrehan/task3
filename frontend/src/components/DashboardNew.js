@@ -43,7 +43,7 @@ function Dashboard({ onLogout }) {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newSupervisor, setNewSupervisor] = useState("");
-  const [newTeacher, setNewTeacher] = useState("");
+  const [newTeacherId, setNewTeacherId] = useState("");
   const [newBarcode, setNewBarcode] = useState("");
 
   // Bulk points
@@ -56,7 +56,7 @@ function Dashboard({ onLogout }) {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editSupervisor, setEditSupervisor] = useState("");
-  const [editTeacher, setEditTeacher] = useState("");
+  const [editTeacherId, setEditTeacherId] = useState("");
   const [editBarcode, setEditBarcode] = useState("");
 
   const headers = {};
@@ -97,14 +97,14 @@ function Dashboard({ onLogout }) {
         name: newName, 
         phone: newPhone, 
         supervisor: newSupervisor, 
-        teacher: newTeacher,
+        teacher_id: newTeacherId,
         barcode: newBarcode || undefined 
       }, { headers });
       // Instantly add the new student to the local list so it appears without refresh
       if (res.data) {
         setStudents(prev => [...prev, res.data].sort((a, b) => (b.points || 0) - (a.points || 0)));
       }
-      setNewName(""); setNewPhone(""); setNewSupervisor(""); setNewTeacher(""); setNewBarcode("");
+      setNewName(""); setNewPhone(""); setNewSupervisor(""); setNewTeacherId(""); setNewBarcode("");
       setShowAddStudent(false);
       showMsg("تمت إضافة الطالب بنجاح");
       // Also refresh from server in background (non-blocking)
@@ -118,9 +118,9 @@ function Dashboard({ onLogout }) {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.put(`${API}/students/${editStudent.id}`, { name: editName, phone: editPhone, supervisor: editSupervisor, teacher: editTeacher, barcode: editBarcode || undefined }, { headers });
+      await axios.put(`${API}/students/${editStudent.id}`, { name: editName, phone: editPhone, supervisor: editSupervisor, teacher_id: editTeacherId, barcode: editBarcode || undefined }, { headers });
       // Instantly update the student in local state
-      setStudents(prev => prev.map(s => s.id === editStudent.id ? { ...s, name: editName, phone: editPhone, supervisor: editSupervisor, teacher: editTeacher, barcode: editBarcode || undefined } : s));
+      setStudents(prev => prev.map(s => s.id === editStudent.id ? { ...s, name: editName, phone: editPhone, supervisor: editSupervisor, teacher_id: editTeacherId, barcode: editBarcode || undefined } : s));
       setEditStudent(null);
       showMsg("تم تحديث بيانات الطالب");
       fetchAllData();
@@ -333,9 +333,9 @@ function Dashboard({ onLogout }) {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-800 truncate">{student.name}</p>
                           {student.phone && <p className="text-xs text-gray-400">{student.phone}</p>}
-                          {student.teacher && (
+                          {student.teacher_id && (
                             <span className="inline-block mt-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold border border-blue-300">
-                              📚 معلم {student.teacher}
+                              📚 معلم {teachers.find(t => t.id === student.teacher_id)?.name || "Unknown"}
                             </span>
                           )}
                         </div>
@@ -346,7 +346,7 @@ function Dashboard({ onLogout }) {
                         {/* Actions */}
                         <div className="flex gap-1">
                           <button onClick={() => setSelectedStudent(student)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold" data-testid={`points-btn-${student.id}`}>نقاط</button>
-                          <button onClick={() => { setEditStudent(student); setEditName(student.name); setEditPhone(student.phone || ""); setEditSupervisor(student.supervisor || ""); setEditTeacher(student.teacher || ""); setEditBarcode(student.barcode || ""); }}
+                          <button onClick={() => { setEditStudent(student); setEditName(student.name); setEditPhone(student.phone || ""); setEditSupervisor(student.supervisor || ""); setEditTeacherId(student.teacher_id || ""); setEditBarcode(student.barcode || ""); }}
                             className="bg-gray-400 hover:bg-gray-500 text-white px-2 py-1 rounded text-xs" data-testid={`edit-btn-${student.id}`}>تعديل</button>
                           <button onClick={() => deleteStudent(student.id)} className="text-red-400 hover:text-red-600 text-sm" data-testid={`delete-btn-${student.id}`}>&#10005;</button>
                         </div>
@@ -443,8 +443,8 @@ function Dashboard({ onLogout }) {
               <div>
                 <label className="block text-sm font-semibold mb-1">📚 المعلم (القرآن)</label>
                 <select
-                  value={newTeacher}
-                  onChange={e => setNewTeacher(e.target.value)}
+                  value={newTeacherId}
+                  onChange={e => setNewTeacherId(e.target.value)}
                   className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
                 >
                   <option value="">اختر المعلم (اختياري)</option>
@@ -492,8 +492,8 @@ function Dashboard({ onLogout }) {
               <div>
                 <label className="block text-sm font-semibold mb-1">📚 المعلم (القرآن)</label>
                 <select
-                  value={editTeacher}
-                  onChange={e => setEditTeacher(e.target.value)}
+                  value={editTeacherId}
+                  onChange={e => setEditTeacherId(e.target.value)}
                   className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:border-lime-500"
                 >
                   <option value="">بدون معلم</option>
