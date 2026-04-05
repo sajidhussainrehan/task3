@@ -366,8 +366,20 @@ function Dashboard({ onLogout }) {
                     <div key={student.id} className="flex items-center gap-3 p-2 rounded-lg border border-gray-300 bg-gray-50">
                       <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold">{student.name.charAt(0)}</div>
                       <div className="flex-1"><p className="font-semibold text-sm">{student.name}</p></div>
-                      <span className="bg-lime-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-bold">{student.points}</span>
-                      <button onClick={() => setSelectedStudent(student)} className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">نقاط</button>
+                      <span className="bg-lime-100 text-green-700 px-2 py-0.5 rounded-full text-sm font-bold">{student.points} ⭐</span>
+                      <div className="flex gap-1">
+                        <button onClick={() => setSelectedStudent(student)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">نقاط</button>
+                        <button onClick={() => { 
+                          setEditStudent(student); 
+                          setEditName(student.name); 
+                          setEditPhone(student.phone || ""); 
+                          setEditSupervisor(student.supervisor || "");
+                          setEditTeacher(student.teacher || "");
+                          setEditBarcode(student.barcode || "");
+                        }}
+                          className="bg-gray-400 hover:bg-gray-500 text-white px-2 py-1 rounded text-xs">تعديل</button>
+                        <button onClick={() => deleteStudent(student.id)} className="text-red-400 hover:text-red-600 text-sm">&#10005;</button>
+                      </div>
                     </div>
                   ))}
                 </div>
