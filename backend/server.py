@@ -403,6 +403,27 @@ async def create_student(data: StudentCreate):
     await db.students.insert_one(doc)
     return student
 
+@api_router.get("/students/by-teacher/{teacher_id}")
+async def get_students_by_teacher(teacher_id: str):
+    """Get all students assigned to a specific teacher"""
+    students = await db.students.find({"teacher_id": teacher_id}, {"_id": 0}).to_list(1000)
+    for s in students:
+        if isinstance(s.get("created_at"), str):
+            s["created_at"] = datetime.fromisoformat(s["created_at"])
+    students.sort(key=lambda x: x.get("points", 0), reverse=True)
+    return students
+
+@api_router.get("/teachers/stats")
+async def get_teacher_stats():
+    """Get count of students assigned to each teacher"""
+    pipeline = [
+        {"$match": {"teacher_id": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$group": {"_id": "$teacher_id", "count": {"$sum": 1}}}
+    ]
+    results = await db.students.aggregate(pipeline).to_list(1000)
+    # Convert to a more convenient dict
+    stats = {r["_id"]: r["count"] for r in results}
+    return stats
 
 # ==================== Teachers CRUD Endpoints ====================
 
