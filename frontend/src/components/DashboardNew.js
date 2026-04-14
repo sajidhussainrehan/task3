@@ -17,12 +17,12 @@ const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 const SUPERVISOR_COLORS = [
-  { bg: "bg-lime-100", text: "text-lime-700", border: "border-lime-400", gradient: "from-lime-500 to-lime-600" },
-  { bg: "bg-green-100", text: "text-green-700", border: "border-green-400", gradient: "from-green-500 to-green-600" },
-  { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-400", gradient: "from-emerald-500 to-emerald-600" },
-  { bg: "bg-teal-100", text: "text-teal-700", border: "border-teal-400", gradient: "from-teal-500 to-teal-600" },
-  { bg: "bg-cyan-100", text: "text-cyan-700", border: "border-cyan-400", gradient: "from-cyan-500 to-cyan-600" },
-  { bg: "bg-green-100", text: "text-green-700", border: "border-green-400", gradient: "from-green-500 to-green-600" },
+  { bg: "bg-emerald-50", text: "text-[#006d44]", border: "border-[#006d44]/30", gradient: "from-[#006d44] to-[#014029]" },
+  { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-400/30", gradient: "from-blue-600 to-blue-800" },
+  { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-400/30", gradient: "from-purple-600 to-purple-800" },
+  { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-400/30", gradient: "from-orange-600 to-orange-800" },
+  { bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-400/30", gradient: "from-pink-600 to-pink-800" },
+  { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-400/30", gradient: "from-teal-600 to-teal-800" },
 ];
 
 function Dashboard({ onLogout }) {
@@ -219,13 +219,6 @@ function Dashboard({ onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-lime-500 to-green-600 text-black py-4 shadow-lg border-b-4 border-black">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-black">🌟 بارع</h1>
-              <p className="text-green-900 text-sm">🎯 لوحة تحكم المشرف</p>
             </div>
             <div className="flex gap-2">
               <Link to="/challenges" className="bg-black hover:bg-gray-800 text-lime-400 px-3 py-2 rounded-lg text-sm font-semibold border-2 border-lime-400" data-testid="challenges-link">🏆 المنافسات</Link>
