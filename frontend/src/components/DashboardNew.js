@@ -191,7 +191,7 @@ function Dashboard({ onLogout }) {
     { id: "groups", label: "المجموعات", icon: "🏅" },
     { id: "students", label: "الطلاب", icon: "👥" },
     { id: "attendance", label: "الحضور", icon: "📱" },
-    { id: "tasks", label: "المبادرات", icon: "🚀" },
+    { id: "tasks", label: "الاستثمارات", icon: "📈" },
     { id: "league", label: "الدوري", icon: "⚽" },
     { id: "teams", label: "تشكيلات الفرق", icon: "🛡️" },
     { id: "star", label: "نجم الدوري", icon: "⭐" },
@@ -236,7 +236,6 @@ function Dashboard({ onLogout }) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Link to="/challenges" className="bg-black hover:bg-gray-800 text-lime-400 px-3 py-2 rounded-lg text-sm font-semibold border-2 border-lime-400 transition-all" data-testid="challenges-link">🏆 المنافسات</Link>
               <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-semibold border-2 border-white transition-all" data-testid="logout-btn">🚪 خروج</button>
             </div>
           </div>
