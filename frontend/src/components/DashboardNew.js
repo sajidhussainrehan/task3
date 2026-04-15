@@ -219,14 +219,27 @@ function Dashboard({ onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
+      {/* Premium Glass Header */}
+      <div className="bg-[#006d44] text-white shadow-xl">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl shadow-inner backdrop-blur-sm border border-white/10">
+                🌿
+              </div>
+              <div>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Ghiras Dashboard</h1>
+                <p className="text-[10px] font-bold text-white/60 tracking-widest uppercase mt-1">Management Portal v4.0</p>
+              </div>
             </div>
             <div className="flex gap-2">
-              <Link to="/challenges" className="bg-black hover:bg-gray-800 text-lime-400 px-3 py-2 rounded-lg text-sm font-semibold border-2 border-lime-400" data-testid="challenges-link">🏆 المنافسات</Link>
-              <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-semibold border-2 border-white" data-testid="logout-btn">🚪 خروج</button>
+              <Link to="/challenges" className="bg-black hover:bg-gray-800 text-lime-400 px-3 py-2 rounded-lg text-sm font-semibold border-2 border-lime-400 transition-all" data-testid="challenges-link">🏆 المنافسات</Link>
+              <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-semibold border-2 border-white transition-all" data-testid="logout-btn">🚪 خروج</button>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* League Star Banner */}
       {leagueStar && (
