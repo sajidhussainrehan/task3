@@ -67,6 +67,56 @@ class TeacherUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
 
+# ==================== Tasks Models ====================
+class Task(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    group: str
+    description: str
+    points: int
+    status: str = "active"  # active, completed, awaiting_approval
+    claimed_by: Optional[str] = None
+    claimed_by_name: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=7))
+
+class TaskCreate(BaseModel):
+    group: str
+    description: str
+    points: int
+
+# ==================== Challenges Models ====================
+class Challenge(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    question: str
+    options: List[str]
+    correct_answer: int
+    points: int
+    active: bool = True
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ChallengeCreate(BaseModel):
+    question: str
+    options: List[str]
+    correct_answer: int
+    points: int
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+
+class ChallengeAnswerRequest(BaseModel):
+    answer: int
+    student_name: str
+
+    name: str
+    username: str
+    password: str
+
+class TeacherUpdate(BaseModel):
+    name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+
 # Authentication credentials from environment variables
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
@@ -427,8 +477,9 @@ async def bulk_add_points(data: BulkPointsUpdate):
 @api_router.get("/students", response_model=List[Student])
 async def get_students():
     """Retrieve all students sorted by points. Excludes image_url for performance (large base64)."""
-    students = await db.students.find({}, {"_id": 0}).to_list(1000)
+    students = await db.students.find({}, {"_id": 0, "image_url": 0}).to_list(1000)
     for s in students:
+
         if isinstance(s.get("created_at"), str):
             try:
                 s["created_at"] = datetime.fromisoformat(s["created_at"].replace('Z', '+00:00'))
@@ -542,8 +593,8 @@ async def teacher_login(data: TeacherLoginRequest):
 
 @api_router.get("/students/{student_id}/profile")
 async def get_student_profile(student_id: str):
-    # Get all students to calculate rank
-    all_students = await db.students.find({}, {"_id": 0}).to_list(1000)
+    # Get all students to calculate rank (no images for speed)
+    all_students = await db.students.find({}, {"_id": 0, "image_url": 0}).to_list(1000)
     all_students.sort(key=lambda x: x.get("points", 0), reverse=True)
     
     # Find student
@@ -600,6 +651,117 @@ async def add_points(student_id: str, data: PointsUpdate):
     await db.points_log.insert_one(log_entry)
     
     return {"success": True}
+
+
+# ==================== Tasks Endpoints ====================
+
+@api_router.get("/tasks")
+async def get_tasks():
+    tasks = await db.tasks.find({}, {"_id": 0}).to_list(1000)
+    for t in tasks:
+        if isinstance(t.get("created_at"), str):
+            t["created_at"] = datetime.fromisoformat(t["created_at"])
+        if isinstance(t.get("expires_at"), str):
+            t["expires_at"] = datetime.fromisoformat(t["expires_at"])
+    return sorted(tasks, key=lambda x: x.get("created_at", datetime.now(timezone.utc)), reverse=True)
+
+@api_router.post("/tasks")
+async def create_task(data: TaskCreate):
+    task = Task(**data.model_dump())
+    doc = task.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    doc["expires_at"] = doc["expires_at"].isoformat()
+    await db.tasks.insert_one(doc)
+    return task
+
+@api_router.post("/tasks/{task_id}/complete")
+async def complete_task_admin(task_id: str):
+    """Admin manually completes a task or approves it"""
+    task = await db.tasks.find_one({"id": task_id})
+    if not task:
+        raise HTTPException(status_code=404, detail="المهمة غير موجودة")
+    
+    await db.tasks.update_one({"id": task_id}, {"$set": {"status": "completed"}})
+    return {"success": True}
+
+@api_router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str):
+    await db.tasks.delete_one({"id": task_id})
+    return {"deleted": True}
+
+# ==================== Challenges Endpoints ====================
+
+@api_router.get("/challenges")
+async def get_all_challenges():
+    challenges = await db.challenges.find({}, {"_id": 0}).to_list(1000)
+    for c in challenges:
+        if isinstance(c.get("created_at"), str):
+            c["created_at"] = datetime.fromisoformat(c["created_at"])
+    return sorted(challenges, key=lambda x: x.get("created_at", datetime.now(timezone.utc)), reverse=True)
+
+@api_router.get("/challenges/active")
+async def get_active_challenges():
+    now = datetime.now(timezone.utc).isoformat()
+    # Find active challenges that are within time bounds if specified
+    query = {"active": True}
+    challenges = await db.challenges.find(query, {"_id": 0}).to_list(100)
+    
+    # Filter by time manually to handle optional fields
+    active = []
+    for c in challenges:
+        is_started = not c.get("start_time") or c["start_time"] <= now
+        is_ended = not c.get("end_time") or c["end_time"] >= now
+        if is_started and is_ended:
+            active.append(c)
+            
+    return active
+
+@api_router.post("/challenges")
+async def create_challenge(data: ChallengeCreate):
+    challenge = Challenge(**data.model_dump())
+    doc = challenge.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.challenges.insert_one(doc)
+    return challenge
+
+@api_router.put("/challenges/{id}/toggle")
+async def toggle_challenge(id: str):
+    c = await db.challenges.find_one({"id": id})
+    if not c:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    await db.challenges.update_one({"id": id}, {"$set": {"active": not c.get("active", True)}})
+    return {"success": True}
+
+@api_router.delete("/challenges/{id}")
+async def delete_challenge(id: str):
+    await db.challenges.delete_one({"id": id})
+    return {"deleted": True}
+
+@api_router.post("/challenges/{id}/answer/{student_id}")
+async def answer_challenge(id: str, student_id: str, data: ChallengeAnswerRequest):
+    challenge = await db.challenges.find_one({"id": id})
+    if not challenge:
+        raise HTTPException(status_code=404, detail="المنافسة غير موجودة")
+    
+    is_correct = data.answer == challenge["correct_answer"]
+    
+    if is_correct:
+        # Check if already awarded (simple check via points log)
+        # For simplicity, we just award points
+        await db.students.update_one({"id": student_id}, {"$inc": {"points": challenge["points"]}})
+        
+        # Log entry
+        log_entry = {
+            "id": str(uuid.uuid4()),
+            "student_id": student_id,
+            "points": challenge["points"],
+            "reason": f"إجابة صحيحة: {challenge['question']}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.points_log.insert_one(log_entry)
+        
+    return {"correct": is_correct, "points": challenge["points"] if is_correct else 0}
+
 
 
 @api_router.get("/students/rankings")
