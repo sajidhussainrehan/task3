@@ -403,7 +403,7 @@ class AttendanceRecord(BaseModel):
 @api_router.get("/students", response_model=List[Student])
 async def get_students():
     """Retrieve all students sorted by points. Excludes image_url for performance (large base64)."""
-    students = await db.students.find({}, {"_id": 0, "image_url": 0}).to_list(1000)
+    students = await db.students.find({}, {"_id": 0}).to_list(1000)
     for s in students:
         if isinstance(s.get("created_at"), str):
             try:

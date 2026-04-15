@@ -72,8 +72,7 @@ function StudentProfilePublic() {
         <div className="absolute bottom-[-40px] left-1/2 -translate-x-1/2 flex flex-col items-center z-30">
           <div className="relative">
             <div className="w-32 h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-white">
-              <img 
-                src={student.image_url ? `${API_BASE}${student.image_url}` : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} 
+                src={student.image_url ? (student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`) : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} 
                 className="w-full h-full object-cover" 
                 alt={student.name} 
               />
