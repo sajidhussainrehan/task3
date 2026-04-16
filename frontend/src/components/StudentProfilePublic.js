@@ -83,6 +83,19 @@ function StudentProfilePublic() {
     { name: "الكتب", icon: "📚", color: "bg-amber-100 text-amber-600", link: "#books" }
   ];
 
+  const handleServiceClick = (link) => {
+    if (link.startsWith("/")) {
+      // Internal route — use navigate
+      window.location.href = link;
+    } else {
+      // Anchor link — smooth scroll
+      const el = document.querySelector(link);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-gray-800 pb-32 overflow-x-hidden" dir="rtl">
       {/* Top Banner & Profile (Enhanced Style) */}
@@ -124,13 +137,13 @@ function StudentProfilePublic() {
           </h3>
           <div className="grid grid-cols-3 gap-8">
             {services.map((s, idx) => (
-              <a href={s.link} key={idx} className="flex flex-col items-center gap-4 group">
+              <button onClick={() => handleServiceClick(s.link)} key={idx} className="flex flex-col items-center gap-4 group text-center">
                 <div className={`w-24 h-24 ${s.color} rounded-[2rem] flex items-center justify-center text-4xl shadow-xl group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 border-2 border-white relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-500 -skew-x-12"></div>
                   <span className="relative z-10">{s.icon}</span>
                 </div>
                 <span className="text-[11px] font-black text-gray-700 text-center uppercase leading-tight tracking-wider">{s.name}</span>
-              </a>
+              </button>
             ))}
           </div>
         </div>
@@ -210,12 +223,54 @@ function StudentProfilePublic() {
           </div>
         )}
 
+        {/* Halaqa Section */}
+        <div id="halaqa">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">✅</div>
+            <div>
+              <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-none mb-1">Halaqa Progress</h3>
+              <p className="text-2xl font-black text-gray-800">الحلقة ✅</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
+            <p className="text-center text-gray-400 font-bold py-6">سيتم عرض درجات الحلقة هنا قريباً</p>
+          </div>
+        </div>
+
+        {/* Attendance Section */}
+        <div id="attendance">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-cyan-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">📅</div>
+            <div>
+              <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-none mb-1">Attendance Record</h3>
+              <p className="text-2xl font-black text-gray-800">سجل الحضور 📅</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
+            <p className="text-center text-gray-400 font-bold py-6">سيتم عرض سجل الحضور هنا قريباً</p>
+          </div>
+        </div>
+
         {/* Initiatives & Challenges */}
         <div className="space-y-16">
             <div id="initiatives"><TasksStudent studentId={student.id} studentName={student.name} studentGroup={student.group} /></div>
             <div id="challenges"><ChallengesStudent studentId={student.id} studentName={student.name} /></div>
             <div id="history"><PointsHistoryStudent studentId={student.id} /></div>
             <div id="qudurat"><QuduratStudent studentId={student.id} studentName={student.name} /></div>
+        </div>
+
+        {/* Books Section */}
+        <div id="books">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">📚</div>
+            <div>
+              <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-none mb-1">Library</h3>
+              <p className="text-2xl font-black text-gray-800">المكتبة 📚</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
+            <p className="text-center text-gray-400 font-bold py-6">سيتم إضافة الكتب والمراجع قريباً</p>
+          </div>
         </div>
 
         {/* Global Leaderboard (Enlarged) */}

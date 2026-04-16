@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
@@ -12,6 +12,7 @@ function SportsLeaguePage() {
   const [students, setStudents] = useState({});
   const [activeTab, setActiveTab] = useState("ranking");
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
     try {
@@ -237,10 +238,10 @@ function SportsLeaguePage() {
       {/* Bottom Nav (Consistent with Home) */}
       <div className="fixed bottom-6 left-6 right-6 z-[100]">
         <div className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] border border-white/10 p-2 shadow-2xl flex items-center justify-between overflow-hidden">
-          <Link to="/" className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-white transition-colors">
+          <button onClick={() => navigate(-1)} className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-white transition-colors">
             <span className="text-lg">🏠</span>
             <span className="text-[8px] font-black uppercase tracking-tighter">Home</span>
-          </Link>
+          </button>
           <div className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400">
             <span className="text-lg">🔔</span>
             <span className="text-[8px] font-black uppercase tracking-tighter">Alerts</span>
@@ -248,10 +249,10 @@ function SportsLeaguePage() {
           <div className="w-16 h-16 -mt-10 bg-[#006d44] rounded-full flex items-center justify-center text-white shadow-xl shadow-[#006d44]/30 border-4 border-[#070b14] ring-4 ring-white/5">
             <span className="text-2xl">⚡</span>
           </div>
-          <div className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400">
+          <button onClick={() => navigate(-1)} className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-white transition-colors">
             <span className="text-lg">📋</span>
             <span className="text-[8px] font-black uppercase tracking-tighter">Tasks</span>
-          </div>
+          </button>
           <Link to="/league" className="flex-1 flex flex-col items-center gap-1 py-2 text-[#006d44]">
             <span className="text-lg">🏆</span>
             <span className="text-[8px] font-black uppercase tracking-tighter underline underline-offset-4">League</span>
