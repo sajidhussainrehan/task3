@@ -1605,6 +1605,21 @@ async def get_attendance_stats(session_id: str):
         "total": len(records)
     }
 
+@api_router.get("/attendance/student/{student_id}")
+async def get_student_attendance_history(student_id: str):
+    """Get all attendance records for a specific student with session dates"""
+    records = await db.attendance_records.find({"student_id": student_id}, {"_id": 0}).to_list(1000)
+    
+    # Enrich with session dates
+    enriched_records = []
+    for r in records:
+        session = await db.attendance_sessions.find_one({"id": r["session_id"]}, {"date": 1, "_id": 0})
+        if session:
+            r["date"] = session.get("date")
+        enriched_records.append(r)
+        
+    return sorted(enriched_records, key=lambda x: x.get("date", ""), reverse=True)
+
 # ==================== Qudurat Endpoints ====================
 
 @api_router.get("/qudurat", response_model=List[QuduratItem])

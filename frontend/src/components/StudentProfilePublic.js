@@ -5,6 +5,8 @@ import QuduratStudent from "./QuduratStudent";
 import ChallengesStudent from "./ChallengesStudent";
 import TasksStudent from "./TasksStudent";
 import PointsHistoryStudent from "./PointsHistoryStudent";
+import AttendanceStudent from "./AttendanceStudent";
+import HalaqaStudent from "./HalaqaStudent";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -132,9 +134,7 @@ function StudentProfilePublic() {
               <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">✅</div>
               <p className="text-2xl font-black text-gray-800">الحلقة</p>
             </div>
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
-              <p className="text-center text-gray-400 font-bold py-6">سيتم عرض درجات الحلقة هنا قريباً</p>
-            </div>
+            <HalaqaStudent studentId={student.id} />
           </div>
         );
       case "challenges":
@@ -154,9 +154,7 @@ function StudentProfilePublic() {
               <div className="w-12 h-12 bg-cyan-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">📅</div>
               <p className="text-2xl font-black text-gray-800">سجل الحضور</p>
             </div>
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
-              <p className="text-center text-gray-400 font-bold py-6">سيتم عرض سجل الحضور هنا قريباً</p>
-            </div>
+            <AttendanceStudent studentId={student.id} />
           </div>
         );
       case "history":
