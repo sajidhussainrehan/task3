@@ -87,8 +87,8 @@ function StudentProfilePublic() {
     { name: "المبادرات", icon: "🚩", color: "bg-rose-100 text-rose-600", link: "#initiatives" },
     { name: "الحلقة", icon: "✅", color: "bg-purple-100 text-purple-600", link: "#halaqa" },
     { name: "المسابقات", icon: "🏆", color: "bg-yellow-100 text-yellow-600", link: "#challenges" },
-    { name: "الحضور", icon: "📅", color: "bg-cyan-100 text-cyan-600", link: "#attendance" },
-    { name: "كشف الحساب", icon: "📄", color: "bg-emerald-100 text-emerald-600", link: "#history" },
+    { name: "الحضور", icon: "📅", color: "bg-cyan-100 text-cyan-600", link: "/attendance" },
+    { name: "كشف الحساب", icon: "📄", color: "bg-emerald-100 text-emerald-600", link: "/history" },
     { name: "الترتيب", icon: "📊", color: "bg-indigo-100 text-indigo-600", link: "/league" },
     { name: "الكتب", icon: "📚", color: "bg-amber-100 text-amber-600", link: "#books" }
   ];
