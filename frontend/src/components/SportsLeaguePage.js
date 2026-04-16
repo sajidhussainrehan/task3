@@ -13,6 +13,7 @@ function SportsLeaguePage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const token = localStorage.getItem("ghiras_token");
+  const lastStudentId = sessionStorage.getItem("last_student_id");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,7 +42,11 @@ function SportsLeaguePage() {
   };
 
   const navItems = [
-    ...(token ? [{ label: "الرئيسية", icon: "🏠", path: "/" }] : []),
+    { 
+      label: "الرئيسية", 
+      icon: "🏠", 
+      path: token ? "/" : (lastStudentId ? `/public/${lastStudentId}` : "/login") 
+    },
     { label: "الدوري", icon: "🏆", path: "/league", active: true },
     { label: "المسابقات", icon: "🕒", path: "#" },
     { label: "الاستثمار", icon: "⚡", path: "#" },

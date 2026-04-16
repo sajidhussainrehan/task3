@@ -42,6 +42,7 @@ function StudentProfilePublic() {
       if (profileRes.data && profileRes.data.student) {
         setStudent(profileRes.data.student);
         setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
+        sessionStorage.setItem("last_student_id", paramId);
       } else {
         setStudent(null);
       }
