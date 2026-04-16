@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import QuduratStudent from "./QuduratStudent";
 import ChallengesStudent from "./ChallengesStudent";
@@ -11,6 +11,7 @@ const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function StudentProfilePublic() {
   const { studentId: paramId } = useParams();
+  const navigate = useNavigate();
   const [student, setStudent] = useState(null);
   const [rankInfo, setRankInfo] = useState({ rank: 0, total: 0 });
   const [upcomingMatches, setUpcomingMatches] = useState([]);
@@ -53,21 +54,30 @@ function StudentProfilePublic() {
   }, [paramId]);
 
   useEffect(() => {
-    fetchStudent();
-  }, [fetchStudent]);
+    if (paramId) {
+      fetchStudent();
+    }
+  }, [paramId, fetchStudent]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#006d44] border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 border-[#006d44] border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-black text-[#006d44] animate-pulse">جاري تحميل البيانات...</p>
+        </div>
       </div>
     );
   }
 
   if (!student) {
     return (
-      <div className="min-h-screen flex items-center justify-center font-bold text-red-500">
-        ❌ Student not found
+      <div className="min-h-screen flex items-center justify-center font-bold text-red-500 bg-white p-10 text-center">
+        <div>
+            <div className="text-6xl mb-4">⚠️</div>
+            <p className="text-2xl mb-4">عذراً، لم يتم العثور على الطالب</p>
+            <button onClick={() => navigate(-1)} className="bg-gray-100 px-6 py-2 rounded-xl text-gray-600">العودة للخلف</button>
+        </div>
       </div>
     );
   }
@@ -85,10 +95,8 @@ function StudentProfilePublic() {
 
   const handleServiceClick = (link) => {
     if (link.startsWith("/")) {
-      // Internal route — use navigate
-      window.location.href = link;
+      navigate(link);
     } else {
-      // Anchor link — smooth scroll
       const el = document.querySelector(link);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -340,25 +348,25 @@ function StudentProfilePublic() {
       {/* Fixed Bottom Bar (Image 3/4 nav) */}
       <div className="fixed bottom-6 left-6 right-6 z-[100]">
         <div className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] border-2 border-emerald-50 p-2 shadow-2xl flex items-center justify-between overflow-hidden">
-          <Link to={`/public/${student.id}`} className="flex-1 flex flex-col items-center gap-1 py-2 text-[#006d44]">
+          <button onClick={() => handleServiceClick("#profile-top")} className="flex-1 flex flex-col items-center gap-1 py-2 text-[#006d44]">
             <span className="text-lg">🏠</span>
             <span className="text-[8px] font-black uppercase tracking-tighter underline underline-offset-4">Home</span>
-          </Link>
+          </button>
           <div className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400">
             <span className="text-lg">🔔</span>
             <span className="text-[8px] font-black uppercase tracking-tighter">Alerts</span>
           </div>
-          <div className="w-16 h-16 -mt-10 bg-[#006d44] rounded-full flex items-center justify-center text-white shadow-xl shadow-emerald-200 border-4 border-white ring-4 ring-emerald-50 transition-all active:scale-90 cursor-pointer">
+          <div onClick={() => handleServiceClick("#profile-top")} className="w-16 h-16 -mt-10 bg-[#006d44] rounded-full flex items-center justify-center text-white shadow-xl shadow-emerald-200 border-4 border-white ring-4 ring-emerald-50 transition-all active:scale-90 cursor-pointer">
             <span className="text-2xl">⚡</span>
           </div>
-          <a href="#initiatives" className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-[#006d44] transition-colors">
+          <button onClick={() => handleServiceClick("#initiatives")} className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-[#006d44] transition-colors">
             <span className="text-lg">📋</span>
             <span className="text-[8px] font-black uppercase tracking-tighter">Initiatives</span>
-          </a>
-          <Link to="/league" className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-[#006d44] transition-colors">
+          </button>
+          <button onClick={() => handleServiceClick("/league")} className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-[#006d44] transition-colors">
             <span className="text-lg">🏆</span>
             <span className="text-[8px] font-black uppercase tracking-tighter">League</span>
-          </Link>
+          </button>
         </div>
       </div>
     </div>
