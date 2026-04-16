@@ -188,15 +188,16 @@ function Dashboard({ onLogout }) {
   const FRONTEND_URL = window.location.origin;
 
   const sections = [
-    { id: "groups", label: "المجموعات", icon: "🏅" },
-    { id: "students", label: "الطلاب", icon: "👥" },
-    { id: "attendance", label: "الحضور", icon: "📱" },
-    { id: "tasks", label: "الاستثمارات", icon: "📈" },
-    { id: "league", label: "الدوري", icon: "⚽" },
-    { id: "teams", label: "تشكيلات الفرق", icon: "🛡️" },
-    { id: "star", label: "نجم الدوري", icon: "⭐" },
-    { id: "viewers", label: "روابط المشاهدة", icon: "🔗" },
-    { id: "qudurat", label: "القدرات", icon: "🍿" },
+    {id: "groups", label: "المجموعات", icon: "🏅" },
+    {id: "students", label: "الطلاب", icon: "👥" },
+    {id: "attendance", label: "الحضور", icon: "📱" },
+    {id: "challenges", label: "المسابقات", icon: "🕒" },
+    {id: "tasks", label: "الاستثمارات", icon: "📈" },
+    {id: "league", label: "الدوري", icon: "⚽" },
+    {id: "teams", label: "تشكيلات الفرق", icon: "🛡️" },
+    {id: "star", label: "نجم الدوري", icon: "⭐" },
+    {id: "viewers", label: "روابط المشاهدة", icon: "🔗" },
+    {id: "qudurat", label: "القدرات", icon: "🍿" },
   ];
 
   if (!localStorage.getItem("ghiras_token")) return null;
@@ -231,7 +232,7 @@ function Dashboard({ onLogout }) {
                 🌿
               </div>
               <div>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">لوحة تحكم غراس</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">لوحة تحكم بريء</h1>
                 <p className="text-[10px] font-bold text-white/60 tracking-widest uppercase mt-1">بوابة الإدارة v4.0</p>
               </div>
             </div>
@@ -427,6 +428,9 @@ function Dashboard({ onLogout }) {
             <AttendanceManager onAttendanceChange={fetchAllData} />
           </div>
         )}
+
+        {/* ===== Challenges Section (The Competition with Timer) ===== */}
+        {activeSection === "challenges" && <ChallengesManager />}
 
         {/* ===== Tasks Section ===== */}
         {activeSection === "tasks" && <TasksManager supervisors={supervisors} />}

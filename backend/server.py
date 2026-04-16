@@ -1000,6 +1000,104 @@ async def answer_challenge(challenge_id: str, student_id: str, data: dict):
     
     return {"correct": is_correct, "points": challenge["points"] if is_correct else 0}
 
+# ==================== Tasks Endpoints ====================
+
+@api_router.get("/tasks", response_model=List[Task])
+async def get_tasks():
+    tasks = await db.tasks.find({}, {"_id": 0}).to_list(1000)
+    for t in tasks:
+        if isinstance(t.get("created_at"), str):
+            t["created_at"] = datetime.fromisoformat(t["created_at"])
+        if isinstance(t.get("expires_at"), str):
+            t["expires_at"] = datetime.fromisoformat(t["expires_at"])
+    return tasks
+
+@api_router.post("/tasks", response_model=Task)
+async def create_task(data: TaskCreate):
+    task = Task(**data.model_dump())
+    doc = task.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    doc["expires_at"] = doc["expires_at"].isoformat()
+    await db.tasks.insert_one(doc)
+    return task
+
+@api_router.post("/tasks/{task_id}/complete")
+async def complete_task(task_id: str):
+    task = await db.tasks.find_one({"id": task_id})
+    if not task:
+        raise HTTPException(status_code=404, detail="المهمة غير موجودة")
+    
+    if task.get("status") == "completed":
+        raise HTTPException(status_code=400, detail="المهمة مكتملة مسبقاً")
+    
+    # In this simplified version, we just mark it as completed.
+    # If a student ID is provided, we would award points here.
+    await db.tasks.update_one({"id": task_id}, {"$set": {"status": "completed"}})
+    return {"success": True}
+
+@api_router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str):
+    result = await db.tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    return {"deleted": True}
+
+# ==================== Challenges Endpoints ====================
+
+@api_router.get("/challenges", response_model=List[Challenge])
+async def get_challenges():
+    challenges = await db.challenges.find({}, {"_id": 0}).to_list(1000)
+    for c in challenges:
+        if isinstance(c.get("created_at"), str):
+            c["created_at"] = datetime.fromisoformat(c["created_at"])
+    return challenges
+
+@api_router.post("/challenges", response_model=Challenge)
+async def create_challenge(data: ChallengeCreate):
+    challenge = Challenge(**data.model_dump())
+    doc = challenge.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.challenges.insert_one(doc)
+    return challenge
+
+@api_router.put("/challenges/{challenge_id}/toggle")
+async def toggle_challenge(challenge_id: str):
+    challenge = await db.challenges.find_one({"id": challenge_id})
+    if not challenge:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    new_status = not challenge.get("active", True)
+    await db.challenges.update_one({"id": challenge_id}, {"$set": {"active": new_status}})
+    return {"success": True, "active": new_status}
+
+@api_router.delete("/challenges/{challenge_id}")
+async def delete_challenge(challenge_id: str):
+    result = await db.challenges.delete_one({"id": challenge_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="غير موجود")
+    return {"deleted": True}
+
+@api_router.post("/challenges/{challenge_id}/answer/{student_id}")
+async def submit_challenge_answer(challenge_id: str, student_id: str, data: ChallengeAnswerRequest):
+    challenge = await db.challenges.find_one({"id": challenge_id}, {"_id": 0})
+    if not challenge:
+        raise HTTPException(status_code=404, detail="المنافسة غير موجودة")
+    
+    is_correct = data.answer == challenge["correct_answer"]
+    
+    if is_correct:
+        # Award points
+        await db.students.update_one({"id": student_id}, {"$inc": {"points": challenge["points"]}})
+        # Log points
+        await db.points_log.insert_one({
+            "id": str(uuid.uuid4()),
+            "student_id": student_id,
+            "points": challenge["points"],
+            "reason": f"إجابة صحيحة: {challenge['question']}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+    
+    return {"correct": is_correct, "points": challenge["points"] if is_correct else 0}
+
 # ==================== League Endpoints ====================
 
 @api_router.get("/matches", response_model=List[Match])

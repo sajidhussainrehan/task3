@@ -66,7 +66,7 @@ function StudentProfilePublic() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
             <div className="w-16 h-16 border-4 border-[#006d44] border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-black text-[#006d44] animate-pulse">جاري تحميل البيانات...</p>
+            <p className="font-black text-[#006d44] animate-pulse">جاري تحميل بيانات بريء...</p>
         </div>
       </div>
     );
@@ -92,7 +92,8 @@ function StudentProfilePublic() {
     { name: "الحضور", icon: "📅", color: "bg-cyan-100 text-cyan-600", key: "attendance" },
     { name: "كشف الحساب", icon: "📄", color: "bg-emerald-100 text-emerald-600", key: "history" },
     { name: "الترتيب", icon: "📊", color: "bg-indigo-100 text-indigo-600", key: "ranking" },
-    { name: "الكتب", icon: "📚", color: "bg-amber-100 text-amber-600", key: "books" }
+    { name: "الكتب", icon: "📚", color: "bg-amber-100 text-amber-600", key: "books" },
+    { name: "الدوري", icon: "⚽", color: "bg-emerald-100 text-emerald-600", key: "league" }
   ];
 
   const handleServiceClick = (key) => {
@@ -104,7 +105,6 @@ function StudentProfilePublic() {
     }
   };
 
-  // Render the content for the selected section
   const renderSectionContent = () => {
     switch (activeSection) {
       case "qudurat":
@@ -178,20 +178,8 @@ function StudentProfilePublic() {
               <div className="bg-white rounded-[3rem] p-6 shadow-2xl shadow-gray-200 border border-gray-100">
                 <div className="space-y-4">
                   {leaderboard.slice(0, 10).map((s, idx) => (
-                    <div 
-                      key={s.id} 
-                      className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all duration-300 ${
-                        s.id === student.id 
-                          ? "bg-[#006d44] text-white border-transparent scale-105 shadow-2xl z-10" 
-                          : "bg-gray-50 border-gray-100 hover:bg-gray-100"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-inner ${
-                        idx === 0 ? "bg-yellow-400 text-white shadow-yellow-200" : 
-                        idx === 1 ? "bg-gray-300 text-white shadow-gray-200" : 
-                        idx === 2 ? "bg-orange-400 text-white shadow-orange-200" : 
-                        s.id === student.id ? "bg-white/20 text-white" : "bg-white text-gray-400 border border-gray-100"
-                      }`}>
+                    <div key={s.id} className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all duration-300 ${s.id === student.id ? "bg-[#006d44] text-white border-transparent scale-105 shadow-2xl z-10" : "bg-gray-50 border-gray-100 hover:bg-gray-100"}`}>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-inner ${idx === 0 ? "bg-yellow-400 text-white shadow-yellow-200" : idx === 1 ? "bg-gray-300 text-white shadow-gray-200" : idx === 2 ? "bg-orange-400 text-white shadow-orange-200" : s.id === student.id ? "bg-white/20 text-white" : "bg-white text-gray-400 border border-gray-100"}`}>
                         {idx + 1}
                       </div>
                       <div className="flex-1">
@@ -207,34 +195,9 @@ function StudentProfilePublic() {
                       </div>
                     </div>
                   ))}
-                  {leaderboard.length > 10 && !leaderboard.slice(0, 10).some(s => s.id === student.id) && (
-                    <>
-                      <div className="text-center text-gray-200 text-3xl py-4">•••</div>
-                      <div className="flex items-center gap-4 p-5 rounded-[2.5rem] bg-[#006d44] text-white border-transparent scale-105 shadow-2xl">
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg bg-white/20">
-                          {rankInfo.rank}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-black text-base text-white">
-                            {student.name}
-                            <span className="mr-3 text-[10px] bg-white text-[#006d44] px-3 py-1 rounded-full font-black">أنت</span>
-                          </p>
-                          <p className="text-[11px] font-bold text-white/60">{student.group}</p>
-                        </div>
-                        <div className="text-left flex flex-col items-end">
-                          <p className="text-2xl font-black italic leading-none text-white">{student.points}</p>
-                          <p className="text-[9px] font-black mt-1 text-white/40">نقطة</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
-            ) : (
-              <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
-                <p className="text-center text-gray-400 font-bold py-6">لا يوجد بيانات للترتيب حالياً</p>
-              </div>
-            )}
+            ) : <div className="text-center py-6">لا يوجد بيانات للترتيب حالياً</div>}
           </div>
         );
       case "books":
@@ -244,8 +207,8 @@ function StudentProfilePublic() {
               <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">📚</div>
               <p className="text-2xl font-black text-gray-800">المكتبة</p>
             </div>
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100">
-              <p className="text-center text-gray-400 font-bold py-6">سيتم إضافة الكتب والمراجع قريباً</p>
+            <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100 text-center text-gray-400 font-bold py-6">
+              سيتم إضافة الكتب والمراجع قريباً
             </div>
           </div>
         );
@@ -261,12 +224,8 @@ function StudentProfilePublic() {
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
         
         <div className="absolute inset-0 flex flex-col items-center justify-center z-30">
-          {/* Back button when viewing a section */}
           {activeSection && (
-            <button 
-              onClick={() => setActiveSection(null)} 
-              className="absolute top-6 right-6 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-black flex items-center gap-2 hover:bg-white/30 transition-all"
-            >
+            <button onClick={() => setActiveSection(null)} className="absolute top-6 right-6 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-black flex items-center gap-2 hover:bg-white/30 transition-all">
               <span>→</span>
               <span>الرجوع</span>
             </button>
@@ -274,11 +233,7 @@ function StudentProfilePublic() {
 
           <div className="relative group">
             <div className="w-40 h-40 rounded-full border-8 border-white/20 shadow-2xl overflow-hidden bg-white ring-8 ring-[#006d44]/50 group-hover:scale-105 transition-all duration-500">
-              <img 
-                src={student.image_url ? (student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`) : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} 
-                className="w-full h-full object-cover" 
-                alt={student.name} 
-              />
+              <img src={student.image_url ? (student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`) : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} className="w-full h-full object-cover" alt={student.name} />
             </div>
             <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-2xl shadow-lg border-2 border-white animate-bounce-slow">🏅</div>
           </div>
@@ -292,25 +247,19 @@ function StudentProfilePublic() {
                 <span className="text-lg">⭐</span>
               </div>
             </div>
-            <p className="text-xs font-black text-white/50 tracking-[.4em]">{student.group || "عضو نادي غراس"}</p>
+            <p className="text-xs font-black text-white/50 tracking-[.4em]">{student.group || "نادي بريء"}</p>
           </div>
         </div>
       </div>
 
-      {/* Show either Home view or Section content */}
       {activeSection ? (
-        /* Section Content View */
-        <div className="pb-8">
-          {renderSectionContent()}
-        </div>
+        <div className="pb-8">{renderSectionContent()}</div>
       ) : (
-        /* Home View - Icons Grid + Level Card + Matches */
         <div className="mt-16 px-6 space-y-16 animate-fadeIn">
-          {/* Services Grid */}
           <div>
             <h3 className="text-xs font-black text-gray-400 mb-8 tracking-[0.4em] mr-2 flex items-center gap-2">
               <span className="w-8 h-[2px] bg-gray-200"></span>
-              الخدمات الأساسية
+              خدمات نادي بريء
             </h3>
             <div className="grid grid-cols-3 gap-8">
               {services.map((s, idx) => (
@@ -325,107 +274,21 @@ function StudentProfilePublic() {
             </div>
           </div>
 
-          {/* Level Card */}
           <div className="bg-[#1a1f2e] text-white rounded-[4rem] p-12 relative overflow-hidden shadow-2xl border border-white/5">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#006d44]/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
             <div className="relative z-10 flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-gray-500 text-[11px] font-black tracking-widest mb-1">ترتيب الطالب</p>
+                <p className="text-gray-500 text-[11px] font-black tracking-widest mb-1">المركز الحالي</p>
                 <p className="text-xl font-black italic text-[#006d44]">المركز #{rankInfo.rank} <span className="text-gray-400 font-bold not-italic text-sm">/ {rankInfo.total}</span></p>
               </div>
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#006d44] to-emerald-600 flex flex-col items-center justify-center border-[10px] border-[#252a3a] shadow-2xl scale-110">
-                <span className="text-4xl font-black leading-none italic">80</span>
-                <span className="text-[10px] font-black tracking-tighter">المستوى</span>
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#006d44] to-emerald-600 flex flex-col items-center justify-center border-[10px] border-[#252a3a] shadow-2xl scale-110 font-black italic">
+                <span className="text-3xl text-white leading-none">Elite</span>
+                <span className="text-[8px] text-emerald-300 uppercase tracking-widest mt-1">Baree'</span>
               </div>
-            </div>
-
-            <div className="mt-12 space-y-8">
-                {[
-                    { label: "المعرفة", val: 85, color: "bg-purple-500" },
-                    { label: "المستثمر", val: 92, color: "bg-emerald-500" },
-                    { label: "التعاون", val: 78, color: "bg-orange-500" },
-                    { label: "الانضباط", val: 95, color: "bg-cyan-500" },
-                    { label: "ضبط النفس", val: 88, color: "bg-red-500" }
-                ].map(skill => (
-                  <div key={skill.label} className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-black tracking-widest">
-                          <span className="text-gray-400">{skill.label}</span>
-                          <span className="text-white">{skill.val}%</span>
-                      </div>
-                      <div className="h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[2px]">
-                          <div className={`h-full ${skill.color} rounded-full flex items-center justify-end px-1 shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-1000`} style={{ width: `${skill.val}%` }}>
-                              <div className="w-1.5 h-1.5 bg-white/80 rounded-full"></div>
-                          </div>
-                      </div>
-                  </div>
-                ))}
             </div>
           </div>
-
-          {/* Upcoming League Matches */}
-          {upcomingMatches.length > 0 && (
-            <div>
-              <h3 className="text-sm font-black text-gray-400 mb-6 tracking-[0.3em] mr-2">المباريات القادمة</h3>
-              <div className="space-y-4">
-                {upcomingMatches.map((match, idx) => (
-                  <div key={match.id || idx} className="bg-[#1a1f2e] text-white rounded-3xl p-6 border border-white/5 shadow-lg overflow-hidden relative">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#006d44] to-emerald-400"></div>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[9px] font-black text-emerald-400 tracking-widest">⚽ مباراة قادمة</span>
-                      {match.match_date && (
-                        <span className="text-[9px] font-black text-gray-400 tracking-widest bg-white/5 px-3 py-1 rounded-full">
-                          📅 {match.match_date}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-center">
-                      <div className="flex-1">
-                        <div className="w-14 h-14 bg-gradient-to-br from-emerald-500/20 to-emerald-700/10 rounded-full mx-auto mb-3 flex items-center justify-center text-xl shadow-inner border border-emerald-500/20">🛡️</div>
-                        <p className="text-[11px] font-black text-gray-200">{match.team1}</p>
-                      </div>
-                      <div className="flex flex-col items-center gap-1 px-4">
-                        <span className="text-2xl font-black text-gray-500 italic">ضد</span>
-                        <span className="text-[8px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                          {match.status === "scheduled" ? "مجدولة" : "قريباً"}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="w-14 h-14 bg-gradient-to-br from-blue-500/20 to-blue-700/10 rounded-full mx-auto mb-3 flex items-center justify-center text-xl shadow-inner border border-blue-500/20">🛡️</div>
-                        <p className="text-[11px] font-black text-gray-200">{match.team2}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
-
-      {/* Fixed Bottom Bar */}
-      <div className="fixed bottom-6 left-6 right-6 z-[100]">
-        <div className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] border-2 border-emerald-50 p-2 shadow-2xl flex items-center justify-between overflow-hidden">
-          <button onClick={() => setActiveSection(null)} className={`flex-1 flex flex-col items-center gap-1 py-2 ${!activeSection ? "text-[#006d44]" : "text-gray-400"} transition-colors`}>
-            <span className="text-lg">🏠</span>
-            <span className={`text-[8px] font-black tracking-tighter ${!activeSection ? "underline underline-offset-4" : ""}`}>الرئيسية</span>
-          </button>
-          <button onClick={() => handleServiceClick("history")} className={`flex-1 flex flex-col items-center gap-1 py-2 ${activeSection === "history" ? "text-[#006d44]" : "text-gray-400"} transition-colors`}>
-            <span className="text-lg">📄</span>
-            <span className="text-[8px] font-black tracking-tighter">كشف الحساب</span>
-          </button>
-          <button onClick={() => navigate("/league")} className="w-16 h-16 -mt-10 bg-[#006d44] rounded-full flex items-center justify-center text-white shadow-xl shadow-emerald-200 border-4 border-white ring-4 ring-emerald-50 transition-all active:scale-90 cursor-pointer">
-            <span className="text-2xl">⚽</span>
-          </button>
-          <button onClick={() => handleServiceClick("initiatives")} className={`flex-1 flex flex-col items-center gap-1 py-2 ${activeSection === "initiatives" ? "text-[#006d44]" : "text-gray-400"} transition-colors`}>
-            <span className="text-lg">📋</span>
-            <span className="text-[8px] font-black tracking-tighter">المبادرات</span>
-          </button>
-          <button onClick={() => handleServiceClick("ranking")} className={`flex-1 flex flex-col items-center gap-1 py-2 ${activeSection === "ranking" ? "text-[#006d44]" : "text-gray-400"} transition-colors`}>
-            <span className="text-lg">📊</span>
-            <span className="text-[8px] font-black tracking-tighter">الترتيب</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
