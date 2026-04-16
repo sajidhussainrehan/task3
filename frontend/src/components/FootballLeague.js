@@ -105,7 +105,7 @@ function FootballLeague({ supervisors }) {
       {activeTab === "standings" && (
         <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-100 overflow-hidden border border-gray-50 animate-fadeIn">
           <div className="bg-gradient-to-r from-[#006d44] to-[#014029] text-white p-6">
-            <h2 className="font-black text-center text-lg italic uppercase tracking-wider">League Standings</h2>
+            <h2 className="font-black text-center text-lg italic uppercase tracking-wider">ترتيب الدوري</h2>
           </div>
           {standings.length > 0 ? (
             <div className="overflow-x-auto">
@@ -141,7 +141,7 @@ function FootballLeague({ supervisors }) {
               </table>
             </div>
           ) : (
-            <div className="p-12 text-center text-gray-400 font-bold italic">No data yet</div>
+            <div className="p-12 text-center text-gray-400 font-bold italic">لا توجد بيانات حالياً</div>
           )}
         </div>
       )}

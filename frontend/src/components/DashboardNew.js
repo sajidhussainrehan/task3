@@ -199,29 +199,29 @@ function Dashboard({ onLogout }) {
     { id: "qudurat", label: "القدرات", icon: "🍿" },
   ];
 
-  if (!localStorage.getItem("adminToken")) return null;
+  if (!localStorage.getItem("ghiras_token")) return null;
 
   if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 animate-fadeIn" dir="rtl">
         <div className="relative group scale-150 mb-8">
-          <div className="w-16 h-16 border-4 border-lime-200 border-t-lime-600 rounded-full animate-spin"></div>
+          <div className="w-16 h-16 border-4 border-[#006d44]/20 border-t-[#006d44] rounded-full animate-spin"></div>
           <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-             <span className="text-2xl">🌟</span>
+             <span className="text-2xl">🌿</span>
           </div>
         </div>
         <div className="text-center space-y-3">
-          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-lime-600 to-green-800 tracking-tight text-black">
+          <h2 className="text-2xl font-bold text-[#006d44] tracking-tight">
             جاري تحميل البيانات...
           </h2>
-          <p className="text-green-600 font-medium animate-pulse">يرجى الانتظار قليلاً</p>
+          <p className="text-emerald-600 font-medium animate-pulse">يرجى الانتظار قليلاً</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50" dir="rtl">
       {/* Premium Glass Header */}
       <div className="bg-[#006d44] text-white shadow-xl">
         <div className="container mx-auto px-4 py-6">
@@ -231,12 +231,12 @@ function Dashboard({ onLogout }) {
                 🌿
               </div>
               <div>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Ghiras Dashboard</h1>
-                <p className="text-[10px] font-bold text-white/60 tracking-widest uppercase mt-1">Management Portal v4.0</p>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">لوحة تحكم غراس</h1>
+                <p className="text-[10px] font-bold text-white/60 tracking-widest uppercase mt-1">بوابة الإدارة v4.0</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-semibold border-2 border-white transition-all" data-testid="logout-btn">🚪 خروج</button>
+              <button onClick={onLogout} className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-black border border-white/20 transition-all active:scale-95" data-testid="logout-btn">🚪 تسجيل الخروج</button>
             </div>
           </div>
         </div>
