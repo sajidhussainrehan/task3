@@ -45,7 +45,7 @@ function SportsLeaguePage() {
     { 
       label: "الرئيسية", 
       icon: "🏠", 
-      path: token ? "/" : (lastStudentId ? `/public/${lastStudentId}` : "/login") 
+      path: lastStudentId ? `/public/${lastStudentId}` : (token ? "/" : "/login")
     },
     { label: "الدوري", icon: "🏆", path: "/league", active: true },
     { label: "المسابقات", icon: "🕒", path: "#" },
