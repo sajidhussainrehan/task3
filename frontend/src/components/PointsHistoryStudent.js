@@ -25,10 +25,10 @@ function PointsHistoryStudent({ studentId }) {
   if (loading) return null;
 
   return (
-    <div className="space-y-8" id="history">
+    <div className="space-y-8 max-w-4xl mx-auto" id="history">
       <div className="flex items-center justify-between mb-8">
         <div>
-            <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-none mb-2">Transaction History</h3>
+            <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-none mb-2">سجل العمليات</h3>
             <p className="text-2xl font-black text-gray-800">كشف الحساب 📄</p>
         </div>
         <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-rose-100">📄</div>
@@ -50,14 +50,14 @@ function PointsHistoryStudent({ studentId }) {
                   <tr key={log.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-6">
                         <p className="text-sm font-black text-gray-800 group-hover:text-[#006d44] transition-colors">{log.reason}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">Automated System Entry</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">إدخال من النظام</p>
                     </td>
-                    <td className="px-6 py-6">
-                      <div className="flex items-baseline gap-1">
+                    <td className="px-6 py-6 text-center">
+                      <div className="flex items-baseline justify-center gap-1">
                         <span className={`text-lg font-black italic ${log.points >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
                           {log.points >= 0 ? `+${log.points}` : log.points}
                         </span>
-                        <span className="text-[8px] font-black text-gray-400 uppercase">Pts</span>
+                        <span className="text-[8px] font-black text-gray-400 uppercase">نقطة</span>
                       </div>
                     </td>
                     <td className="px-6 py-6">
@@ -66,7 +66,7 @@ function PointsHistoryStudent({ studentId }) {
                           {log.created_at ? new Date(log.created_at).toLocaleDateString('ar-SA') : '-'}
                         </p>
                         <p className="text-[9px] font-bold text-gray-400 uppercase">
-                          {log.created_at ? new Date(log.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                          {log.created_at ? new Date(log.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-'}
                         </p>
                       </div>
                     </td>
@@ -88,13 +88,13 @@ function PointsHistoryStudent({ studentId }) {
             <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-xl border border-emerald-500/30">📊</div>
                 <div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Active Balance</p>
-                    <p className="text-lg font-black italic">Recent Activity Logged</p>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">الرصيد النشط</p>
+                    <p className="text-lg font-black italic">تم تسجيل النشاط الأخير</p>
                 </div>
             </div>
             <div className="text-right">
-                <p className="text-2xl font-black text-emerald-400 italic">Verified</p>
-                <p className="text-[8px] font-black text-gray-600 uppercase">Status</p>
+                <p className="text-2xl font-black text-emerald-400 italic">موثق</p>
+                <p className="text-[8px] font-black text-gray-600 uppercase">الحالة</p>
             </div>
         </div>
       )}
