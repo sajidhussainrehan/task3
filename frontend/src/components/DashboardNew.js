@@ -232,7 +232,7 @@ function Dashboard({ onLogout }) {
                 🌿
               </div>
               <div>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">لوحة تحكم بريء</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">لوحة تحكم بارع</h1>
                 <p className="text-[10px] font-bold text-white/60 tracking-widest uppercase mt-1">بوابة الإدارة v4.0</p>
               </div>
             </div>

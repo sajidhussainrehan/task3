@@ -106,14 +106,14 @@ function FootballLeague({ supervisors }) {
 
       <button onClick={() => setShowAddMatch(true)} className="w-full bg-[#006d44] hover:bg-[#004e31] text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-200 transition-all active:scale-95 flex items-center justify-center gap-2">
         <span className="text-xl">⚽</span>
-        جدولة مباراة جديدة في دوري بريء
+        جدولة مباراة جديدة في دوري بارع
       </button>
 
       {/* Standings */}
       {activeTab === "standings" && (
         <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-100 overflow-hidden border border-gray-50 animate-fadeIn">
           <div className="bg-gradient-to-r from-[#006d44] to-[#014029] text-white p-6">
-            <h2 className="font-black text-center text-lg italic uppercase tracking-wider">ترتيب دوري بريء</h2>
+            <h2 className="font-black text-center text-lg italic uppercase tracking-wider">ترتيب دوري بارع</h2>
           </div>
           {standings.length > 0 ? (
             <div className="overflow-x-auto">

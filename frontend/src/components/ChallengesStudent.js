@@ -94,7 +94,7 @@ function ChallengesStudent({ studentId, studentName }) {
             <div className="flex items-center gap-3 mb-8">
                 <div className="w-12 h-12 bg-lime-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">🎯</div>
                 <div>
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.1em] leading-none mb-1">لوحة مسابقات بريء</h3>
+                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.1em] leading-none mb-1">لوحة مسابقات بارع</h3>
                     <p className="text-2xl font-black text-gray-800">المنافسات النشطة 🎯</p>
                 </div>
             </div>

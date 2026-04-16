@@ -59,7 +59,7 @@ function SportsLeaguePage() {
     <div className="min-h-screen bg-[#0a0f1e] text-white p-6 pb-32 font-sans" dir="rtl">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-black italic tracking-tighter">دوري بريء لكرة القدم</h1>
+        <h1 className="text-2xl font-black italic tracking-tighter">دوري بارع لكرة القدم</h1>
         <div className="bg-[#006d44]/20 border border-[#006d44]/50 px-4 py-1 rounded-full flex items-center gap-2">
           <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
           <span className="text-[10px] font-black text-emerald-400">مباشر الآن</span>
@@ -77,9 +77,9 @@ function SportsLeaguePage() {
         <div className="absolute inset-0 z-20 flex flex-col justify-end p-8">
           <div className="flex items-center gap-2 mb-2">
             <span className="bg-[#006d44] text-[10px] font-black px-3 py-1 rounded-full">الجولة النهائية</span>
-            <span className="text-gray-300 text-[10px] font-bold italic">ملعب بريء</span>
+            <span className="text-gray-300 text-[10px] font-bold italic">ملعب بارع</span>
           </div>
-          <h2 className="text-3xl font-black italic leading-none mb-1">بطولة نجوم بريء 2026</h2>
+          <h2 className="text-3xl font-black italic leading-none mb-1">بطولة نجوم بارع 2026</h2>
           <p className="text-gray-400 text-xs font-bold tracking-widest">المنافسة على لقب بطل الملعب</p>
         </div>
       </div>

@@ -67,7 +67,7 @@ function StudentProfilePublic() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
             <div className="w-16 h-16 border-4 border-[#006d44] border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-black text-[#006d44] animate-pulse">جاري تحميل بيانات بريء...</p>
+            <p className="font-black text-[#006d44] animate-pulse">جاري تحميل بيانات بارع...</p>
         </div>
       </div>
     );
@@ -248,7 +248,7 @@ function StudentProfilePublic() {
                 <span className="text-lg">⭐</span>
               </div>
             </div>
-            <p className="text-xs font-black text-white/50 tracking-[.4em]">{student.group || "نادي بريء"}</p>
+            <p className="text-xs font-black text-white/50 tracking-[.4em]">{student.group || "نادي بارع"}</p>
           </div>
         </div>
       </div>
@@ -260,7 +260,7 @@ function StudentProfilePublic() {
           <div>
             <h3 className="text-xs font-black text-gray-400 mb-8 tracking-[0.4em] mr-2 flex items-center gap-2">
               <span className="w-8 h-[2px] bg-gray-200"></span>
-              خدمات نادي بريء
+              خدمات نادي بارع
             </h3>
             <div className="grid grid-cols-3 gap-8">
               {services.map((s, idx) => (
@@ -284,7 +284,7 @@ function StudentProfilePublic() {
               </div>
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#006d44] to-emerald-600 flex flex-col items-center justify-center border-[10px] border-[#252a3a] shadow-2xl scale-110 font-black italic">
                 <span className="text-3xl text-white leading-none">Elite</span>
-                <span className="text-[8px] text-emerald-300 uppercase tracking-widest mt-1">Baree'</span>
+                <span className="text-[8px] text-emerald-300 uppercase tracking-widest mt-1">Bariaa</span>
               </div>
             </div>
           </div>

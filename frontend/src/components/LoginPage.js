@@ -34,7 +34,7 @@ function LoginPage({ onLogin }) {
           <div className="w-20 h-20 bg-gradient-to-br from-lime-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl font-bold border-4 border-black">
             ب
           </div>
-          <h1 className="text-center text-lg font-bold mb-6">🌟 بريء</h1>
+          <h1 className="text-center text-lg font-bold mb-6">🌟 بارع</h1>
           <p className="text-gray-500 mt-2">تسجيل دخول المشرف</p>
         </div>
 
