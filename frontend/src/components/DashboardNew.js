@@ -12,6 +12,7 @@ import TeamManager from "./TeamManager";
 import AttendanceManager from "./AttendanceManager";
 import QuduratManager from "./QuduratManager";
 import TeacherManagement from "./TeacherManagement";
+import ChallengesManager from "./ChallengesManager";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
