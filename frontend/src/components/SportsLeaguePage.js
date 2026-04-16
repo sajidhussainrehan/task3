@@ -8,6 +8,7 @@ const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 function SportsLeaguePage() {
   const [standings, setStandings] = useState([]);
   const [results, setResults] = useState([]);
+  const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [activeTab, setActiveTab] = useState("ranking");
   const [loading, setLoading] = useState(true);
@@ -18,13 +19,15 @@ function SportsLeaguePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [standRes, matchRes, teamRes] = await Promise.all([
+        const [standRes, matchRes, upcomingRes, teamRes] = await Promise.all([
           axios.get(`${API}/league-standings`),
           axios.get(`${API}/matches`),
+          axios.get(`${API}/matches/upcoming`),
           axios.get(`${API}/teams`)
         ]);
         setStandings(standRes.data || []);
         setResults((matchRes.data || []).filter(m => m.status === "completed"));
+        setUpcomingMatches(upcomingRes.data || []);
         setTeams(teamRes.data || []);
       } catch (err) {
         console.error("Error fetching league data:", err);
@@ -69,32 +72,43 @@ function SportsLeaguePage() {
       {/* Hero Banner */}
       <div className="relative rounded-[2.5rem] overflow-hidden mb-10 h-64 shadow-2xl group border border-white/5">
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-transparent to-transparent z-10"></div>
-        <img 
-          src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=1200" 
-          className="absolute inset-0 w-full h-full object-cover opacity-60" 
-          alt="الدوري" 
-        />
+        {standings.length > 0 && getTeamPhoto(standings[0].team) ? (
+          <img 
+            src={getTeamPhoto(standings[0].team)} 
+            className="absolute inset-0 w-full h-full object-cover opacity-60" 
+            alt="المتصدر" 
+          />
+        ) : (
+          <img 
+            src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=1200" 
+            className="absolute inset-0 w-full h-full object-cover opacity-60" 
+            alt="الدوري" 
+          />
+        )}
         <div className="absolute inset-0 z-20 flex flex-col justify-end p-8">
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#006d44] text-[10px] font-black px-3 py-1 rounded-full">الجولة النهائية</span>
+            <span className="bg-[#006d44] text-[10px] font-black px-3 py-1 rounded-full">المتصدر حالياً</span>
             <span className="text-gray-300 text-[10px] font-bold italic">ملعب بارع</span>
           </div>
-          <h2 className="text-3xl font-black italic leading-none mb-1">بطولة نجوم بارع 2026</h2>
+          <h2 className="text-3xl font-black italic leading-none mb-1">
+            {standings.length > 0 ? standings[0].team : "بطولة نجوم بارع 2026"}
+          </h2>
           <p className="text-gray-400 text-xs font-bold tracking-widest">المنافسة على لقب بطل الملعب</p>
         </div>
       </div>
 
       {/* Selection Tabs */}
-      <div className="flex gap-2 bg-[#1a1f2e]/50 p-1.5 rounded-2xl mb-8 border border-white/5">
+      <div className="flex gap-2 bg-[#1a1f2e]/50 p-1.5 rounded-2xl mb-8 border border-white/5 overflow-x-auto scroller-hidden">
         {[
           {id: "ranking", label: "الترتيب العام"},
+          {id: "upcoming", label: "مباريات قادمة"},
           {id: "results", label: "آخر النتائج"},
           {id: "teams", label: "الفرق المشاركة"}
         ].map((tab) => (
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id)} 
-            className={`flex-1 py-3 rounded-xl font-black text-xs transition-all ${
+            className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-xs transition-all ${
                 activeTab === tab.id ? "bg-[#006d44] text-white shadow-xl scale-[1.02]" : "text-gray-500"
             }`}
           >
@@ -135,6 +149,43 @@ function SportsLeaguePage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {activeTab === "upcoming" && (
+          <div className="space-y-4">
+            {upcomingMatches.length > 0 ? upcomingMatches.map((match, index) => (
+              <div key={index} className="bg-[#151a28] rounded-[2.5rem] p-8 border border-white/5 shadow-lg relative overflow-hidden">
+                 <div className="absolute top-0 right-0 bg-emerald-500/10 text-emerald-400 text-[10px] font-black px-4 py-1 rounded-bl-2xl border-l border-b border-emerald-500/20 uppercase tracking-widest">جدولة</div>
+                 <div className="flex items-center justify-between gap-6 mt-2">
+                    {/* Team 1 */}
+                    <div className="flex-1 flex flex-col items-center gap-2">
+                        {getTeamPhoto(match.team1) ? (
+                            <img src={getTeamPhoto(match.team1)} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-white/10 shadow-xl" />
+                        ) : (
+                            <div className="w-16 h-16 bg-[#1f2637] rounded-2xl flex items-center justify-center text-3xl shadow-inner">🛡️</div>
+                        )}
+                        <p className="font-black text-xs text-center leading-tight truncate w-full">{match.team1}</p>
+                    </div>
+
+                    <div className="px-4 py-2 bg-[#1f2637] rounded-xl text-emerald-500 font-black italic text-xl shadow-inner shrink-0 tracking-tighter">VS</div>
+
+                    {/* Team 2 */}
+                    <div className="flex-1 flex flex-col items-center gap-2">
+                        {getTeamPhoto(match.team2) ? (
+                            <img src={getTeamPhoto(match.team2)} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-white/10 shadow-xl" />
+                        ) : (
+                            <div className="w-16 h-16 bg-[#1f2637] rounded-2xl flex items-center justify-center text-3xl shadow-inner">🛡️</div>
+                        )}
+                        <p className="font-black text-xs text-center leading-tight truncate w-full">{match.team2}</p>
+                    </div>
+                 </div>
+                 <div className="text-center mt-6">
+                    <p className="text-[10px] font-bold text-gray-500 mb-1">مرحلة المجموعات</p>
+                    <p className="text-xs font-black text-white italic">انتظروا المباراة قريباً</p>
+                 </div>
+              </div>
+            )) : <div className="text-center py-20 text-gray-500 font-black italic">لا يوجد مباريات مجدولة حالياً</div>}
           </div>
         )}
 
