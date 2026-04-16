@@ -5,6 +5,28 @@ import axios from "axios";
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
+const Countdown = ({ targetDate }) => {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const diff = new Date(targetDate) - new Date();
+      if (diff <= 0) {
+        setTimeLeft("منتهي");
+        clearInterval(timer);
+      } else {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / 1000 / 60) % 60);
+        setTimeLeft(`${days} يوم و ${hours} ساعة`);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return <span>{timeLeft}</span>;
+};
+
 function ChallengesManager() {
   const navigate = useNavigate();
   const headers = {};
@@ -140,14 +162,9 @@ function ChallengesManager() {
                     <div className="bg-lime-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold border border-green-300">
                       {challenge.points} نقطة
                     </div>
-                    {challenge.start_time && (
-                      <div className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] border border-blue-200">
-                        📅 يبدأ: {new Date(challenge.start_time).toLocaleString('ar-EG')}
-                      </div>
-                    )}
-                    {challenge.end_time && (
-                      <div className="bg-red-50 text-red-700 px-2 py-0.5 rounded text-[10px] border border-red-200">
-                        ⌛ ينتهي: {new Date(challenge.end_time).toLocaleString('ar-EG')}
+                    {challenge.active && challenge.end_time && (
+                      <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black border border-amber-200 animate-pulse">
+                        ⌛ ينتهي خلال: <Countdown targetDate={challenge.end_time} />
                       </div>
                     )}
                   </div>

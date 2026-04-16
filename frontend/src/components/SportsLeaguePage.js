@@ -51,9 +51,9 @@ function SportsLeaguePage() {
       path: lastStudentId ? `/public/${lastStudentId}` : (token ? "/" : "/login")
     },
     { label: "الدوري", icon: "🏆", path: "/league", active: true },
-    { label: "المسابقات", icon: "🕒", path: "#" },
-    { label: "الاستثمار", icon: "⚡", path: "#" },
-    { label: "المهام", icon: "📋", path: "#" },
+    { label: "المسابقات", icon: "🕒", path: lastStudentId ? `/public/${lastStudentId}` : "#" },
+    { label: "الاستثمار", icon: "⚡", path: lastStudentId ? `/public/${lastStudentId}` : "#" },
+    { label: "المهام", icon: "📋", path: lastStudentId ? `/public/${lastStudentId}` : "#" },
   ];
 
   if (loading) return <div className="min-h-screen bg-[#0a0f1e] text-white flex items-center justify-center font-black">جاري التحميل...</div>;
