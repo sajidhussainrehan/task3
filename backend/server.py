@@ -1063,13 +1063,24 @@ async def get_challenges():
             c["created_at"] = datetime.fromisoformat(c["created_at"])
     return challenges
 
-@api_router.post("/challenges", response_model=Challenge)
+@api_router.post("/challenges")
 async def create_challenge(data: ChallengeCreate):
-    challenge = Challenge(**data.model_dump())
-    doc = challenge.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
+    challenge_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    doc = {
+        "id": challenge_id,
+        "question": data.question,
+        "options": data.options,
+        "correct_answer": data.correct_answer,
+        "points": data.points,
+        "active": True,
+        "created_at": now,
+        "start_time": data.start_time,
+        "end_time": data.end_time
+    }
     await db.challenges.insert_one(doc)
-    return challenge
+    return doc
 
 @api_router.put("/challenges/{challenge_id}/toggle")
 async def toggle_challenge(challenge_id: str):
