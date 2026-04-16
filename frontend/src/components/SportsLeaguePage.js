@@ -53,10 +53,10 @@ function SportsLeaguePage() {
     <div className="min-h-screen bg-[#070b14] text-white p-6 pb-24" dir="rtl">
       {/* Header (Image 5 Style) */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-black italic tracking-tighter uppercase">Ghiras Football</h1>
+        <h1 className="text-2xl font-black italic tracking-tighter">دوري غراس لكرة القدم</h1>
         <div className="bg-[#006d44]/20 border border-[#006d44]/50 px-4 py-1 rounded-full flex items-center gap-2">
             <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-            <span className="text-[10px] font-bold text-[#006d44] uppercase">Live Now</span>
+            <span className="text-[10px] font-bold text-[#006d44]">مباشر الآن</span>
         </div>
       </div>
 
@@ -88,15 +88,15 @@ function SportsLeaguePage() {
         <img 
           src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800" 
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-          alt="League" 
+          alt="الدوري" 
         />
         <div className="absolute inset-0 z-20 flex flex-col justify-end p-8">
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#006d44] text-[10px] font-black px-3 py-1 rounded-full">FINAL ROUND</span>
-            <span className="text-gray-300 text-[10px] font-bold italic uppercase">Ghiras Stadium</span>
+            <span className="bg-[#006d44] text-[10px] font-black px-3 py-1 rounded-full">الجولة النهائية</span>
+            <span className="text-gray-300 text-[10px] font-bold italic">ملعب غراس</span>
           </div>
-          <h2 className="text-3xl font-black italic uppercase leading-none mb-1">Football League 2026</h2>
-          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Master of the Pitch Tournament</p>
+          <h2 className="text-3xl font-black italic leading-none mb-1">دوري كرة القدم 2026</h2>
+          <p className="text-gray-400 text-xs font-bold tracking-widest">بطولة نجوم الملعب</p>
         </div>
       </div>
 
@@ -118,12 +118,12 @@ function SportsLeaguePage() {
                     </div>
                     <div>
                         <p className="font-black text-white text-sm uppercase tracking-wide group-hover:text-[#006d44] transition-colors">{team.team}</p>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Matches Played: {team.played}</p>
+                        <p className="text-[10px] font-bold text-gray-500 tracking-tighter">المباريات: {team.played}</p>
                     </div>
                 </div>
                 <div className="text-right">
                     <p className="text-2xl font-black italic text-[#006d44] leading-none">{team.points}</p>
-                    <p className="text-[10px] font-black text-gray-600 uppercase">Points</p>
+                    <p className="text-[10px] font-black text-gray-600">نقطة</p>
                 </div>
             </div>
           ))
@@ -131,8 +131,8 @@ function SportsLeaguePage() {
           matches.filter(m => m.status === "completed").map((m, idx) => (
             <div key={idx} className="bg-[#1a1f2e] rounded-3xl p-6 border border-white/5 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
-                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Match Result</span>
-                    <span className="text-[9px] font-black text-[#006d44] uppercase tracking-widest">Full Time</span>
+                    <span className="text-[9px] font-black text-gray-500 tracking-widest">نتيجة المباراة</span>
+                    <span className="text-[9px] font-black text-[#006d44] tracking-widest">انتهت</span>
                 </div>
                 <div className="flex items-center justify-between text-center">
                     <div className="flex-1">
@@ -240,23 +240,23 @@ function SportsLeaguePage() {
         <div className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] border border-white/10 p-2 shadow-2xl flex items-center justify-between overflow-hidden">
           <button onClick={() => navigate(-1)} className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-white transition-colors">
             <span className="text-lg">🏠</span>
-            <span className="text-[8px] font-black uppercase tracking-tighter">Home</span>
+            <span className="text-[8px] font-black tracking-tighter">الرئيسية</span>
           </button>
           <div className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400">
             <span className="text-lg">🔔</span>
-            <span className="text-[8px] font-black uppercase tracking-tighter">Alerts</span>
+            <span className="text-[8px] font-black tracking-tighter">التنبيهات</span>
           </div>
           <div className="w-16 h-16 -mt-10 bg-[#006d44] rounded-full flex items-center justify-center text-white shadow-xl shadow-[#006d44]/30 border-4 border-[#070b14] ring-4 ring-white/5">
             <span className="text-2xl">⚡</span>
           </div>
           <button onClick={() => navigate(-1)} className="flex-1 flex flex-col items-center gap-1 py-2 text-gray-400 hover:text-white transition-colors">
             <span className="text-lg">📋</span>
-            <span className="text-[8px] font-black uppercase tracking-tighter">Tasks</span>
+            <span className="text-[8px] font-black tracking-tighter">المهام</span>
           </button>
-          <Link to="/league" className="flex-1 flex flex-col items-center gap-1 py-2 text-[#006d44]">
+          <div className="flex-1 flex flex-col items-center gap-1 py-2 text-[#006d44]">
             <span className="text-lg">🏆</span>
-            <span className="text-[8px] font-black uppercase tracking-tighter underline underline-offset-4">League</span>
-          </Link>
+            <span className="text-[8px] font-black tracking-tighter underline underline-offset-4">الدوري</span>
+          </div>
         </div>
       </div>
     </div>
