@@ -178,7 +178,7 @@ function StudentProfilePublic() {
             {leaderboard.length > 0 ? (
               <div className="bg-white rounded-[3rem] p-6 shadow-2xl shadow-gray-200 border border-gray-100">
                 <div className="space-y-4">
-                  {leaderboard.slice(0, 10).map((s, idx) => (
+                  {leaderboard.map((s, idx) => (
                     <div key={s.id} className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all duration-300 ${s.id === student.id ? "bg-[#006d44] text-white border-transparent scale-105 shadow-2xl z-10" : "bg-gray-50 border-gray-100 hover:bg-gray-100"}`}>
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-inner ${idx === 0 ? "bg-yellow-400 text-white shadow-yellow-200" : idx === 1 ? "bg-gray-300 text-white shadow-gray-200" : idx === 2 ? "bg-orange-400 text-white shadow-orange-200" : s.id === student.id ? "bg-white/20 text-white" : "bg-white text-gray-400 border border-gray-100"}`}>
                         {idx + 1}

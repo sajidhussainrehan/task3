@@ -882,16 +882,33 @@ async def submit_challenge_answer(challenge_id: str, student_id: str, data: Chal
     if not challenge:
         raise HTTPException(status_code=404, detail="المنافسة غير موجودة")
     
+    # Check if student already attempted this challenge
+    attempt_key = f"CHALLENGE_ATTEMPT:{challenge_id}"
+    already_attempted = await db.points_log.find_one({
+        "student_id": student_id,
+        "reason": {"$regex": f"^{attempt_key}"}
+    })
+    
+    if already_attempted:
+        raise HTTPException(status_code=400, detail="لقد تمت الإجابة على هذه المسابقة مسبقاً")
+    
     is_correct = data.answer == challenge["correct_answer"]
+    
+    # Record the attempt (even if wrong) to lock it
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "student_id": student_id,
+        "points": challenge["points"] if is_correct else 0,
+        "reason": f"{attempt_key} | {challenge['question'] if is_correct else 'إجابة خاطئة'}",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_correct": is_correct
+    }
+    
     if is_correct:
         await db.students.update_one({"id": student_id}, {"$inc": {"points": challenge["points"]}})
-        await db.points_log.insert_one({
-            "id": str(uuid.uuid4()),
-            "student_id": student_id,
-            "points": challenge["points"],
-            "reason": f"إجابة صحيحة: {challenge['question']}",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
+    
+    await db.points_log.insert_one(log_entry)
+    return {"is_correct": is_correct, "message": "تم تقديم الإجابة" if is_correct else "إجابة خاطئة، حظاً موفقاً في المرة القادمة"}
     
     return {"correct": is_correct, "points": challenge["points"] if is_correct else 0}
 
