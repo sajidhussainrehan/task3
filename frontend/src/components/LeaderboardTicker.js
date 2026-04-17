@@ -1,5 +1,13 @@
 import { useRef, useState } from "react";
 
+const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+};
+
 function LeaderboardTicker({ students }) {
   const tickerRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -74,8 +82,9 @@ function LeaderboardTicker({ students }) {
               <div className="relative">
                 {top3[1].image_url ? (
                   <img
-                    src={top3[1].image_url}
+                    src={getImageUrl(top3[1].image_url)}
                     alt={top3[1].name}
+                    loading="lazy"
                     className="w-16 h-16 rounded-full object-cover border-4 border-gray-300"
                   />
                 ) : (
@@ -103,8 +112,9 @@ function LeaderboardTicker({ students }) {
               <div className="relative">
                 {top3[0].image_url ? (
                   <img
-                    src={top3[0].image_url}
+                    src={getImageUrl(top3[0].image_url)}
                     alt={top3[0].name}
+                    loading="lazy"
                     className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400"
                   />
                 ) : (
@@ -132,8 +142,9 @@ function LeaderboardTicker({ students }) {
               <div className="relative">
                 {top3[2].image_url ? (
                   <img
-                    src={top3[2].image_url}
+                    src={getImageUrl(top3[2].image_url)}
                     alt={top3[2].name}
+                    loading="lazy"
                     className="w-14 h-14 rounded-full object-cover border-4 border-orange-400"
                   />
                 ) : (
@@ -191,8 +202,9 @@ function LeaderboardTicker({ students }) {
                   {/* Student Image */}
                   {student.image_url ? (
                     <img
-                      src={student.image_url}
+                      src={getImageUrl(student.image_url)}
                       alt={student.name}
+                      loading="lazy"
                       className="w-10 h-10 rounded-full object-cover border-2 border-white/50"
                     />
                   ) : (

@@ -17,6 +17,12 @@ import ChallengesManager from "./ChallengesManager";
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+};
+
 const SUPERVISOR_COLORS = [
   { bg: "bg-emerald-50", text: "text-[#006d44]", border: "border-[#006d44]/30", gradient: "from-[#006d44] to-[#014029]" },
   { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-400/30", gradient: "from-blue-600 to-blue-800" },
@@ -352,7 +358,7 @@ function Dashboard({ onLogout }) {
                         {/* Image */}
                         <div className="relative">
                           {student.image_url ? (
-                            <img src={student.image_url} alt="" className={`w-10 h-10 rounded-full object-cover border-2 ${color.border}`} />
+                            <img src={getImageUrl(student.image_url)} alt="" loading="lazy" className={`w-10 h-10 rounded-full object-cover border-2 ${color.border}`} />
                           ) : (
                             <div className={`w-10 h-10 rounded-full ${color.bg} ${color.text} flex items-center justify-center font-bold`}>
                               {student.name.charAt(0)}
