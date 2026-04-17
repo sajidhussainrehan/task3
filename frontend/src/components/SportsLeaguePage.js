@@ -11,6 +11,7 @@ function SportsLeaguePage() {
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [activeTab, setActiveTab] = useState("ranking");
+  const [selectedTeam, setSelectedTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const token = localStorage.getItem("ghiras_token");
@@ -227,17 +228,71 @@ function SportsLeaguePage() {
         )}
 
         {activeTab === "teams" && (
-           <div className="grid grid-cols-2 gap-4">
-              {teams.map((team, index) => (
-                <div key={index} className="bg-[#151a28] rounded-[1.5rem] p-4 text-center border border-white/5 group hover:border-emerald-500/50 transition-all">
-                    {team.group_photo ? (
-                        <img src={team.group_photo} alt={team.name} className="w-full h-28 object-cover rounded-xl mb-3 shadow-xl group-hover:scale-105 transition-transform" />
-                    ) : (
-                        <div className="w-full h-28 bg-[#1f2637] rounded-xl mb-3 flex items-center justify-center text-3xl">🛡️</div>
+           <div>
+              <div className="grid grid-cols-2 gap-4">
+                {teams.map((team, index) => (
+                  <button key={index} onClick={() => setSelectedTeam(team)} className="bg-[#151a28] rounded-[1.5rem] p-4 text-center border border-white/5 group hover:border-emerald-500/50 transition-all text-right w-full">
+                      {team.group_photo ? (
+                          <img src={team.group_photo} alt={team.name} className="w-full h-28 object-cover rounded-xl mb-3 shadow-xl group-hover:scale-105 transition-transform" />
+                      ) : (
+                          <div className="w-full h-28 bg-[#1f2637] rounded-xl mb-3 flex items-center justify-center text-3xl">🛡️</div>
+                      )}
+                      <h3 className="font-black text-sm text-center">{team.name}</h3>
+                      {team.lineup && team.lineup.length > 0 && (
+                        <p className="text-[10px] text-emerald-500 font-bold text-center mt-1">👥 {team.lineup.length} لاعب — اضغط لعرض التشكيلة</p>
+                      )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Team Lineup Modal */}
+              {selectedTeam && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedTeam(null)}>
+                  <div className="bg-[#0a0f1e] rounded-[2.5rem] p-6 w-full max-w-lg border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-black italic text-white">{selectedTeam.name}</h3>
+                      <button onClick={() => setSelectedTeam(null)} className="bg-white/10 text-white w-8 h-8 rounded-full text-sm font-bold hover:bg-white/20">✕</button>
+                    </div>
+
+                    {/* Football Field */}
+                    <div className="relative aspect-[4/5] bg-[#004e31] rounded-[2rem] overflow-hidden border-2 border-[#006d44] shadow-2xl">
+                      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 10%, rgba(255,255,255,0.1) 10%, rgba(255,255,255,0.1) 20%)' }}></div>
+                      <div className="absolute inset-4 border-2 border-white/20 pointer-events-none"></div>
+                      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/20"></div>
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/20 rounded-full"></div>
+                      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-20 border-2 border-white/20 bg-white/5"></div>
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-40 h-20 border-2 border-white/10 bg-white/5"></div>
+
+                      {selectedTeam.lineup && selectedTeam.lineup.length > 0 ? (
+                        selectedTeam.lineup.map(player => (
+                          <div
+                            key={player.student_id}
+                            className="absolute -translate-x-1/2 -translate-y-1/2"
+                            style={{ left: `${player.x}%`, top: `${player.y}%` }}
+                          >
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="w-12 h-12 bg-white rounded-full shadow-lg border-2 border-emerald-500 overflow-hidden">
+                                {player.image_url ? (
+                                  <img src={player.image_url.startsWith('data:') ? player.image_url : `${API_BASE}${player.image_url}`} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-xl bg-emerald-100">⚽</div>
+                                )}
+                              </div>
+                              <span className="bg-black/60 backdrop-blur-sm text-white text-[8px] px-2 py-0.5 rounded-full whitespace-nowrap font-bold">{player.name}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-white/50 font-bold text-sm">لم يتم تحديد تشكيلة بعد</div>
+                      )}
+                    </div>
+
+                    {selectedTeam.group_photo && (
+                      <img src={selectedTeam.group_photo} alt="" className="w-full h-24 object-cover rounded-xl mt-4 border border-white/10" />
                     )}
-                    <h3 className="font-black text-sm">{team.name}</h3>
+                  </div>
                 </div>
-              ))}
+              )}
            </div>
         )}
       </div>

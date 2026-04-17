@@ -61,6 +61,7 @@ function TeamManager({ groups, students }) {
     const newPlayer = {
       student_id: student.id,
       name: student.name,
+      image_url: student.image_url || null,
       x: 50, // center
       y: 80  // bottom
     };
@@ -209,8 +210,14 @@ function TeamManager({ groups, students }) {
                   >
                     <div className="relative">
                       <div className="w-14 h-14 bg-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.3)] border-2 border-emerald-600 flex flex-col items-center justify-center overflow-hidden transition-transform group-hover:scale-110">
-                         <div className="bg-emerald-600 text-white w-full py-0.5 text-[7px] font-black uppercase text-center">{player.name.split(' ')[0]}</div>
-                         <div className="flex-1 flex items-center justify-center text-[18px]">👤</div>
+                         {player.image_url ? (
+                           <img src={player.image_url.startsWith('data:') ? player.image_url : `${API_BASE}${player.image_url}`} alt="" className="w-full h-full object-cover" />
+                         ) : (
+                           <>
+                             <div className="bg-emerald-600 text-white w-full py-0.5 text-[7px] font-black uppercase text-center">{player.name.split(' ')[0]}</div>
+                             <div className="flex-1 flex items-center justify-center text-[18px]">👤</div>
+                           </>
+                         )}
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); removeFromLineup(player.student_id); }}
