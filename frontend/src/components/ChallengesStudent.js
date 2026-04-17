@@ -75,7 +75,7 @@ function ChallengesStudent({ studentId, studentName }) {
     const now = new Date();
     // Filter out inactive (disabled) challenges and expired challenges
     const visibleChallenges = challenges.filter(c => {
-        if (!c.is_active) return false;
+        if (!c.active) return false;
         const end = c.end_time ? new Date(c.end_time) : null;
         if (end && end < now) return false; // Hide expired
         return true;
