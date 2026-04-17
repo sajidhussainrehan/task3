@@ -16,7 +16,7 @@ function ChallengesStudent({ studentId, studentName }) {
             try {
                 const [challengesRes, answeredRes] = await Promise.all([
                     axios.get(`${API}/challenges`),
-                    axios.get(`${API}/students/${studentId}/points-log`)
+                    axios.get(`${API}/points-log/${studentId}`)
                 ]);
                 
                 setChallenges(challengesRes.data || []);
