@@ -4,6 +4,11 @@ import axios from "axios";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+};
 
 function SportsLeaguePage() {
   const [standings, setStandings] = useState([]);
@@ -273,7 +278,7 @@ function SportsLeaguePage() {
                             <div className="flex flex-col items-center gap-1">
                               <div className="w-12 h-12 bg-white rounded-full shadow-lg border-2 border-emerald-500 overflow-hidden">
                                 {player.image_url ? (
-                                  <img src={player.image_url.startsWith('data:') ? player.image_url : `${API_BASE}${player.image_url}`} alt="" className="w-full h-full object-cover" />
+                                  <img src={getImageUrl(player.image_url)} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-xl bg-emerald-100">⚽</div>
                                 )}

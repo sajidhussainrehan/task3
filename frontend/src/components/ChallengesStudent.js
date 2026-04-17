@@ -81,7 +81,15 @@ function ChallengesStudent({ studentId, studentName }) {
         return true;
     });
 
-    if (visibleChallenges.length === 0) return null;
+    if (visibleChallenges.length === 0) {
+        return (
+            <div className="bg-white/50 border-2 border-dashed border-gray-200 rounded-[2.5rem] p-12 text-center">
+                <div className="text-4xl mb-4 opacity-30">🎯</div>
+                <p className="text-gray-400 font-bold">لا يوجد مسابقات نشطة حالياً</p>
+                <p className="text-gray-300 text-xs mt-2 uppercase tracking-widest">Check back later</p>
+            </div>
+        );
+    }
 
     const formatDateTime = (dt) => {
         if (!dt) return null;

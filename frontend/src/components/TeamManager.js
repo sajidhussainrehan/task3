@@ -3,6 +3,11 @@ import axios from "axios";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+};
 
 function TeamManager({ groups, students }) {
   const [selectedGroup, setSelectedGroup] = useState("");
@@ -108,8 +113,15 @@ function TeamManager({ groups, students }) {
               <h3 className="font-bold text-emerald-800 mb-3 border-b border-emerald-200 pb-2">طلاب المجموعة</h3>
               <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                 {groupStudents.map(s => (
-                  <div key={s.id} className="flex items-center justify-between bg-white p-2 rounded-lg shadow-sm">
-                    <span className="text-sm font-semibold">{s.name}</span>
+                   <div key={s.id} className="flex items-center gap-3 bg-white p-2 rounded-lg shadow-sm border border-emerald-100">
+                     <div className="w-8 h-8 rounded-full overflow-hidden border border-emerald-200 bg-emerald-100 flex-shrink-0">
+                       {getImageUrl(s.image_url) ? (
+                         <img src={getImageUrl(s.image_url)} alt="" className="w-full h-full object-cover" />
+                       ) : (
+                         <div className="w-full h-full flex items-center justify-center text-xs opacity-50">👤</div>
+                       )}
+                     </div>
+                     <span className="text-sm font-semibold flex-1">{s.name}</span>
                     <button
                       onClick={() => addToLineup(s)}
                       disabled={teamData.lineup.some(p => p.student_id === s.id)}
@@ -210,8 +222,8 @@ function TeamManager({ groups, students }) {
                   >
                     <div className="relative">
                       <div className="w-14 h-14 bg-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.3)] border-2 border-emerald-600 flex flex-col items-center justify-center overflow-hidden transition-transform group-hover:scale-110">
-                         {player.image_url ? (
-                           <img src={player.image_url.startsWith('data:') ? player.image_url : `${API_BASE}${player.image_url}`} alt="" className="w-full h-full object-cover" />
+                         {getImageUrl(player.image_url) ? (
+                           <img src={getImageUrl(player.image_url)} alt="" className="w-full h-full object-cover" />
                          ) : (
                            <>
                              <div className="bg-emerald-600 text-white w-full py-0.5 text-[7px] font-black uppercase text-center">{player.name.split(' ')[0]}</div>
