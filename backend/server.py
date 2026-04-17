@@ -667,12 +667,23 @@ async def get_tasks():
 
 @api_router.post("/tasks")
 async def create_task(data: TaskCreate):
-    task = Task(**data.model_dump())
-    doc = task.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
-    doc["expires_at"] = doc["expires_at"].isoformat()
+    task_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    expiry = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    
+    doc = {
+        "id": task_id,
+        "group": data.group,
+        "description": data.description,
+        "points": data.points,
+        "status": "active",
+        "created_at": now,
+        "expires_at": expiry,
+        "claimed_by": None,
+        "claimed_by_name": None
+    }
     await db.tasks.insert_one(doc)
-    return task
+    return doc
 
 @api_router.post("/tasks/{task_id}/complete")
 async def complete_task_admin(task_id: str):
