@@ -108,6 +108,7 @@ class ChallengeAnswerRequest(BaseModel):
     answer: int
     student_name: str
 
+class TeacherCreate(BaseModel):
     name: str
     username: str
     password: str

@@ -73,11 +73,11 @@ function ChallengesStudent({ studentId, studentName }) {
     if (loading) return null;
     
     const now = new Date();
-    // Filter out inactive (disabled) challenges and expired challenges
+    // Filter: show challenges the admin has marked as active
+    // Support both 'active' and legacy 'is_active' fields
     const visibleChallenges = challenges.filter(c => {
-        if (!c.active) return false;
-        const end = c.end_time ? new Date(c.end_time) : null;
-        if (end && end < now) return false; // Hide expired
+        const isActive = c.active === true || c.is_active === true;
+        if (!isActive) return false;
         return true;
     });
 
