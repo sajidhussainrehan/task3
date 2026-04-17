@@ -15,6 +15,7 @@ function SportsLeaguePage() {
   const [results, setResults] = useState([]);
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [studentImageMap, setStudentImageMap] = useState({});
   const [activeTab, setActiveTab] = useState("ranking");
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,16 +26,23 @@ function SportsLeaguePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [standRes, matchRes, upcomingRes, teamRes] = await Promise.all([
+        const [standRes, matchRes, upcomingRes, teamRes, studentsRes] = await Promise.all([
           axios.get(`${API}/league-standings`),
           axios.get(`${API}/matches`),
           axios.get(`${API}/matches/upcoming`),
-          axios.get(`${API}/teams`)
+          axios.get(`${API}/teams`),
+          axios.get(`${API}/students`)
         ]);
         setStandings(standRes.data || []);
         setResults((matchRes.data || []).filter(m => m.status === "completed"));
         setUpcomingMatches(upcomingRes.data || []);
         setTeams(teamRes.data || []);
+        // Build a map of student_id -> image_url for lineup fallback
+        const imgMap = {};
+        (studentsRes.data || []).forEach(s => {
+          if (s.image_url) imgMap[s.id] = s.image_url;
+        });
+        setStudentImageMap(imgMap);
       } catch (err) {
         console.error("Error fetching league data:", err);
       } finally {
@@ -252,52 +260,56 @@ function SportsLeaguePage() {
 
               {/* Team Lineup Modal */}
               {selectedTeam && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedTeam(null)}>
-                  <div className="bg-[#0a0f1e] rounded-[2.5rem] p-6 w-full max-w-lg border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-black italic text-white">{selectedTeam.name}</h3>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedTeam(null)}>
+                  <div className="bg-[#0a0f1e] rounded-2xl sm:rounded-[2.5rem] p-3 sm:p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <h3 className="text-lg sm:text-xl font-black italic text-white">{selectedTeam.name}</h3>
                       <button onClick={() => setSelectedTeam(null)} className="bg-white/10 text-white w-8 h-8 rounded-full text-sm font-bold hover:bg-white/20">✕</button>
                     </div>
 
                     {/* Football Field */}
-                    <div className="relative aspect-[4/5] bg-[#004e31] rounded-[2rem] overflow-hidden border-2 border-[#006d44] shadow-2xl">
+                    <div className="relative aspect-[3/4] sm:aspect-[4/5] bg-[#004e31] rounded-xl sm:rounded-[2rem] overflow-hidden border-2 border-[#006d44] shadow-2xl">
                       <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 10%, rgba(255,255,255,0.1) 10%, rgba(255,255,255,0.1) 20%)' }}></div>
-                      <div className="absolute inset-4 border-2 border-white/20 pointer-events-none"></div>
+                      <div className="absolute inset-3 sm:inset-4 border-2 border-white/20 pointer-events-none"></div>
                       <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/20"></div>
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/20 rounded-full"></div>
-                      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-40 h-20 border-2 border-white/20 bg-white/5"></div>
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-40 h-20 border-2 border-white/10 bg-white/5"></div>
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 sm:w-24 sm:h-24 border-2 border-white/20 rounded-full"></div>
+                      <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 w-28 sm:w-40 h-14 sm:h-20 border-2 border-white/20 bg-white/5"></div>
+                      <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 w-28 sm:w-40 h-14 sm:h-20 border-2 border-white/10 bg-white/5"></div>
 
                       {selectedTeam.lineup && selectedTeam.lineup.length > 0 ? (
-                        selectedTeam.lineup.map(player => (
+                        selectedTeam.lineup.map(player => {
+                          const playerImg = player.image_url || studentImageMap[player.student_id] || null;
+                          return (
                           <div
                             key={player.student_id}
                             className="absolute -translate-x-1/2 -translate-y-1/2"
                             style={{ left: `${player.x}%`, top: `${player.y}%` }}
                           >
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="w-12 h-12 bg-white rounded-full shadow-lg border-2 border-emerald-500 overflow-hidden">
-                                {player.image_url ? (
-                                  <img src={getImageUrl(player.image_url)} alt="" className="w-full h-full object-cover" />
+                            <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full shadow-lg border-2 border-emerald-500 overflow-hidden">
+                                {playerImg ? (
+                                  <img src={getImageUrl(playerImg)} alt="" className="w-full h-full object-cover" loading="lazy" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-xl bg-emerald-100">⚽</div>
+                                  <div className="w-full h-full flex items-center justify-center text-lg sm:text-xl bg-emerald-100">⚽</div>
                                 )}
                               </div>
-                              <span className="bg-black/60 backdrop-blur-sm text-white text-[8px] px-2 py-0.5 rounded-full whitespace-nowrap font-bold">{player.name}</span>
+                              <span className="bg-black/60 backdrop-blur-sm text-white text-[7px] sm:text-[8px] px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap font-bold">{player.name}</span>
                             </div>
                           </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-white/50 font-bold text-sm">لم يتم تحديد تشكيلة بعد</div>
                       )}
                     </div>
 
                     {selectedTeam.group_photo && (
-                      <img src={selectedTeam.group_photo} alt="" className="w-full h-24 object-cover rounded-xl mt-4 border border-white/10" />
+                      <img src={selectedTeam.group_photo} alt="" className="w-full h-20 sm:h-24 object-cover rounded-xl mt-3 sm:mt-4 border border-white/10" />
                     )}
                   </div>
                 </div>
               )}
+
            </div>
         )}
       </div>
