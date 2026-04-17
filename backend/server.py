@@ -1728,12 +1728,31 @@ class TeamUpdate(BaseModel):
 @api_router.get("/teams")
 async def get_all_teams():
     teams = await db.teams.find({}, {"_id": 0}).to_list(100)
+    # Enrich lineup players with their current image_url from students collection
+    for team in teams:
+        if team.get("lineup"):
+            student_ids = [p.get("student_id") for p in team["lineup"] if p.get("student_id")]
+            if student_ids:
+                students = await db.students.find({"id": {"$in": student_ids}}, {"_id": 0, "id": 1, "image_url": 1}).to_list(100)
+                img_map = {s["id"]: s.get("image_url") for s in students}
+                for player in team["lineup"]:
+                    if not player.get("image_url"):
+                        player["image_url"] = img_map.get(player.get("student_id"))
     return teams
 
 @api_router.get("/teams/{group_name}")
 async def get_team(group_name: str):
     team = await db.teams.find_one({"name": group_name}, {"_id": 0})
     if team:
+        # Enrich lineup players with their current image_url from students collection
+        if team.get("lineup"):
+            student_ids = [p.get("student_id") for p in team["lineup"] if p.get("student_id")]
+            if student_ids:
+                students = await db.students.find({"id": {"$in": student_ids}}, {"_id": 0, "id": 1, "image_url": 1}).to_list(100)
+                img_map = {s["id"]: s.get("image_url") for s in students}
+                for player in team["lineup"]:
+                    if not player.get("image_url"):
+                        player["image_url"] = img_map.get(player.get("student_id"))
         return team
     return {"name": group_name, "group_photo": "", "lineup": []}
 
