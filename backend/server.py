@@ -67,22 +67,6 @@ class TeacherUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
 
-# ==================== Tasks Models ====================
-class Task(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    group: str
-    description: str
-    points: int
-    status: str = "active"  # active, completed, awaiting_approval
-    claimed_by: Optional[str] = None
-    claimed_by_name: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=7))
-
-class TaskCreate(BaseModel):
-    group: str
-    description: str
-    points: int
 
 # ==================== Challenges Models ====================
 class Challenge(BaseModel):
@@ -108,15 +92,6 @@ class ChallengeAnswerRequest(BaseModel):
     answer: int
     student_name: str
 
-class TeacherCreate(BaseModel):
-    name: str
-    username: str
-    password: str
-
-class TeacherUpdate(BaseModel):
-    name: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
 
 # Authentication credentials from environment variables
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
@@ -258,6 +233,7 @@ class Task(BaseModel):
     points: int = 0
     status: str = "active"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=7))
     claims: List[str] = []
     claimed_by: Optional[str] = None
     claimed_by_name: Optional[str] = None
@@ -654,37 +630,6 @@ async def add_points(student_id: str, data: PointsUpdate):
     return {"success": True}
 
 
-# ==================== Tasks Endpoints ====================
-
-@api_router.get("/tasks")
-async def get_tasks():
-    tasks = await db.tasks.find({}, {"_id": 0}).to_list(1000)
-    for t in tasks:
-        if isinstance(t.get("created_at"), str):
-            t["created_at"] = datetime.fromisoformat(t["created_at"])
-        if isinstance(t.get("expires_at"), str):
-            t["expires_at"] = datetime.fromisoformat(t["expires_at"])
-    return sorted(tasks, key=lambda x: x.get("created_at", datetime.now(timezone.utc)), reverse=True)
-
-@api_router.post("/tasks")
-async def create_task(data: TaskCreate):
-    task_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    expiry = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-    
-    doc = {
-        "id": task_id,
-        "group": data.group,
-        "description": data.description,
-        "points": data.points,
-        "status": "active",
-        "created_at": now,
-        "expires_at": expiry,
-        "claimed_by": None,
-        "claimed_by_name": None
-    }
-    await db.tasks.insert_one(doc)
-    return doc
 
 @api_router.get("/students/rankings")
 async def get_student_rankings():
@@ -763,6 +708,8 @@ async def get_tasks(group: Optional[str] = Query(None)):
     for t in tasks:
         if isinstance(t.get("created_at"), str):
             t["created_at"] = datetime.fromisoformat(t["created_at"])
+        if isinstance(t.get("expires_at"), str):
+            t["expires_at"] = datetime.fromisoformat(t["expires_at"])
     return sorted(tasks, key=lambda x: x.get("created_at", datetime.now(timezone.utc)), reverse=True)
 
 @api_router.post("/tasks", response_model=Task)
@@ -770,6 +717,7 @@ async def create_task(data: TaskCreate):
     task = Task(**data.model_dump())
     doc = task.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
+    doc["expires_at"] = doc["expires_at"].isoformat()
     await db.tasks.insert_one(doc)
     return task
 
