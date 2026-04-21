@@ -7,6 +7,7 @@ import TasksStudent from "./TasksStudent";
 import PointsHistoryStudent from "./PointsHistoryStudent";
 import AttendanceStudent from "./AttendanceStudent";
 import HalaqaStudent from "./HalaqaStudent";
+import BooksStudent from "./BooksStudent";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -125,7 +126,7 @@ function StudentProfilePublic() {
               <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">🚩</div>
               <p className="text-2xl font-black text-gray-800">المبادرات</p>
             </div>
-            <TasksStudent studentId={student.id} studentName={student.name} studentGroup={student.group} />
+            <TasksStudent studentId={student.id} studentName={student.name} studentGroup={student.supervisor} />
           </div>
         );
       case "halaqa":
@@ -208,9 +209,7 @@ function StudentProfilePublic() {
               <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-2xl shadow-sm">📚</div>
               <p className="text-2xl font-black text-gray-800">المكتبة</p>
             </div>
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-gray-200/50 border border-gray-100 text-center text-gray-400 font-bold py-6">
-              سيتم إضافة الكتب والمراجع قريباً
-            </div>
+            <BooksStudent studentId={student.id} studentName={student.name} />
           </div>
         );
       default:
@@ -248,7 +247,7 @@ function StudentProfilePublic() {
                 <span className="text-lg">⭐</span>
               </div>
             </div>
-            <p className="text-xs font-black text-white/50 tracking-[.4em]">{student.group || "نادي بارع"}</p>
+            <p className="text-xs font-black text-white/50 tracking-[.4em]">{student.supervisor || "نادي بارع"}</p>
           </div>
         </div>
       </div>

@@ -426,7 +426,50 @@ class AttendanceRecord(BaseModel):
     scanned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_late_period: bool = False
 
+# ==================== Book Models ====================
+
+class Book(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: str = ""
+    cover_image: Optional[str] = None
+    file_url: Optional[str] = None  # base64 PDF data
+    points_for_summary: int = 20
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BookCreate(BaseModel):
+    title: str
+    description: str = ""
+    points_for_summary: int = 20
+
+class BookSummary(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    book_id: str
+    student_id: str
+    student_name: str
+    summary_text: str
+    points_awarded: int = 0
+    status: str = "pending"  # "pending", "approved", "rejected"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BookSummaryCreate(BaseModel):
+    student_id: str
+    student_name: str
+    summary_text: str
+
+class BookSummaryReview(BaseModel):
+    status: str  # "approved", "rejected"
+    points: int = 0
+
 # ==================== Student Endpoints ====================
+
+@api_router.put("/students/reset-all-points")
+async def reset_all_points():
+    """Reset all students' points to zero"""
+    result = await db.students.update_many({}, {"$set": {"points": 0}})
+    # Clear points log too
+    await db.points_log.delete_many({})
+    return {"success": True, "reset_count": result.modified_count}
 
 @api_router.put("/students/bulk-points")
 async def bulk_add_points(data: BulkPointsUpdate):
@@ -1741,6 +1784,139 @@ async def upload_team_photo(group_name: str, file: UploadFile = File(...)):
         upsert=True
     )
     return {"image_url": image_url}
+
+# ==================== Books Endpoints ====================
+
+@api_router.get("/books")
+async def get_books():
+    books = await db.books.find({}, {"_id": 0, "file_url": 0}).to_list(1000)
+    for b in books:
+        if isinstance(b.get("created_at"), str):
+            b["created_at"] = datetime.fromisoformat(b["created_at"])
+    return sorted(books, key=lambda x: x.get("created_at", datetime.now(timezone.utc)), reverse=True)
+
+@api_router.get("/books/{book_id}")
+async def get_book(book_id: str):
+    book = await db.books.find_one({"id": book_id}, {"_id": 0})
+    if not book:
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
+    if isinstance(book.get("created_at"), str):
+        book["created_at"] = datetime.fromisoformat(book["created_at"])
+    return book
+
+@api_router.post("/books")
+async def create_book(data: BookCreate):
+    book = Book(**data.model_dump())
+    doc = book.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.books.insert_one(doc)
+    return book
+
+@api_router.delete("/books/{book_id}")
+async def delete_book(book_id: str):
+    result = await db.books.delete_one({"id": book_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
+    # Also delete all summaries for this book
+    await db.book_summaries.delete_many({"book_id": book_id})
+    return {"deleted": True}
+
+@api_router.post("/books/{book_id}/upload-file")
+async def upload_book_file(book_id: str, file: UploadFile = File(...)):
+    content = await file.read()
+    base64_data = base64.b64encode(content).decode("utf-8")
+    file_data = f"data:{file.content_type};base64,{base64_data}"
+    
+    result = await db.books.update_one(
+        {"id": book_id},
+        {"$set": {"file_url": file_data}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
+    return {"success": True}
+
+@api_router.post("/books/{book_id}/upload-cover")
+async def upload_book_cover(book_id: str, file: UploadFile = File(...)):
+    content = await file.read()
+    base64_img = base64.b64encode(content).decode("utf-8")
+    img_data = f"data:{file.content_type};base64,{base64_img}"
+    
+    result = await db.books.update_one(
+        {"id": book_id},
+        {"$set": {"cover_image": img_data}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
+    return {"cover_image": img_data}
+
+@api_router.post("/books/{book_id}/summary")
+async def submit_book_summary(book_id: str, data: BookSummaryCreate):
+    # Check if student already submitted summary for this book
+    existing = await db.book_summaries.find_one({
+        "book_id": book_id,
+        "student_id": data.student_id
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="لقد قمت بإرسال ملخص لهذا الكتاب مسبقاً")
+    
+    book = await db.books.find_one({"id": book_id})
+    if not book:
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
+    
+    summary = BookSummary(
+        book_id=book_id,
+        student_id=data.student_id,
+        student_name=data.student_name,
+        summary_text=data.summary_text
+    )
+    doc = summary.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.book_summaries.insert_one(doc)
+    return summary
+
+@api_router.get("/books/{book_id}/summaries")
+async def get_book_summaries(book_id: str):
+    summaries = await db.book_summaries.find({"book_id": book_id}, {"_id": 0}).to_list(1000)
+    for s in summaries:
+        if isinstance(s.get("created_at"), str):
+            s["created_at"] = datetime.fromisoformat(s["created_at"])
+    return sorted(summaries, key=lambda x: x.get("created_at", datetime.now(timezone.utc)), reverse=True)
+
+@api_router.get("/books/summaries/by-student/{student_id}")
+async def get_student_book_summaries(student_id: str):
+    summaries = await db.book_summaries.find({"student_id": student_id}, {"_id": 0}).to_list(1000)
+    for s in summaries:
+        if isinstance(s.get("created_at"), str):
+            s["created_at"] = datetime.fromisoformat(s["created_at"])
+    return summaries
+
+@api_router.put("/books/summaries/{summary_id}/review")
+async def review_book_summary(summary_id: str, data: BookSummaryReview):
+    summary = await db.book_summaries.find_one({"id": summary_id})
+    if not summary:
+        raise HTTPException(status_code=404, detail="الملخص غير موجود")
+    
+    await db.book_summaries.update_one(
+        {"id": summary_id},
+        {"$set": {"status": data.status, "points_awarded": data.points}}
+    )
+    
+    # If approved, award points to student
+    if data.status == "approved" and data.points > 0:
+        await db.students.update_one(
+            {"id": summary["student_id"]},
+            {"$inc": {"points": data.points}}
+        )
+        log_entry = {
+            "id": str(uuid.uuid4()),
+            "student_id": summary["student_id"],
+            "points": data.points,
+            "reason": f"ملخص كتاب معتمد",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.points_log.insert_one(log_entry)
+    
+    return {"success": True}
 
 # ==================== Health Check ====================
 

@@ -13,6 +13,7 @@ import AttendanceManager from "./AttendanceManager";
 import QuduratManager from "./QuduratManager";
 import TeacherManagement from "./TeacherManagement";
 import ChallengesManager from "./ChallengesManager";
+import BooksManager from "./BooksManager";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -191,6 +192,18 @@ function Dashboard({ onLogout }) {
     }
   };
 
+  const handleResetPoints = async () => {
+    if (!window.confirm("⚠️ هل أنت متأكد من تصفير نقاط جميع الطلاب؟ لا يمكن التراجع عن هذه الخطوة!")) return;
+    setLoading(true);
+    try {
+      await axios.put(`${API}/students/reset-all-points`);
+      showMsg("تم تصفير جميع النقاط بنجاح ✅");
+      await fetchAllData();
+    } catch {
+      showMsg("خطأ في تصفير النقاط");
+    } finally { setLoading(false); }
+  };
+
   const getColor = (index) => SUPERVISOR_COLORS[index % SUPERVISOR_COLORS.length];
   const FRONTEND_URL = window.location.origin;
 
@@ -205,6 +218,7 @@ function Dashboard({ onLogout }) {
     {id: "star", label: "نجم الدوري", icon: "⭐" },
     {id: "viewers", label: "روابط المشاهدة", icon: "🔗" },
     {id: "qudurat", label: "القدرات", icon: "🍿" },
+    {id: "books", label: "المكتبة", icon: "📚" },
   ];
 
   if (!localStorage.getItem("ghiras_token")) return null;
@@ -301,6 +315,7 @@ function Dashboard({ onLogout }) {
               <button onClick={() => setShowQRModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold" data-testid="qr-codes-btn">📱 رموز QR</button>
               <button onClick={() => setShowBulkPoints(true)} className="bg-lime-500 hover:bg-lime-600 text-black px-4 py-2 rounded-lg text-sm font-bold border-2 border-black" data-testid="bulk-points-btn">💎 نقاط جماعية</button>
               <button onClick={() => setShowTeacherManagement(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold border-2 border-black">👨‍🏫 إدارة المعلمين</button>
+              <button onClick={handleResetPoints} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold border-2 border-black">⚠️ تصفير النقاط</button>
             </div>
 
             {/* Stats */}
@@ -454,6 +469,9 @@ function Dashboard({ onLogout }) {
 
         {/* ===== Qudurat Section ===== */}
         {activeSection === "qudurat" && <QuduratManager />}
+
+        {/* ===== Books Section ===== */}
+        {activeSection === "books" && <BooksManager />}
       </div>
 
       {/* ===== Modals ===== */}
