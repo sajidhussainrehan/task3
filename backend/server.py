@@ -885,6 +885,25 @@ async def submit_challenge_answer(challenge_id: str, student_id: str, data: Chal
     if not challenge:
         raise HTTPException(status_code=404, detail="المنافسة غير موجودة")
     
+    # 1. Check if challenge is active
+    isActive = challenge.get("active", True) or challenge.get("is_active", True)
+    if not isActive:
+        raise HTTPException(status_code=400, detail="هذه المسابقة غير مفعلة حالياً")
+
+    # 2. Check if answering time has ended
+    if challenge.get("end_time"):
+        try:
+            end_time = challenge["end_time"]
+            if isinstance(end_time, str):
+                end_time = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
+            
+            # Use same timezone as DB (UTC)
+            if datetime.now(timezone.utc) > end_time:
+                raise HTTPException(status_code=400, detail="عذراً، انتهى الوقت المخصص للإجابة على هذه المسابقة")
+        except Exception as e:
+            # If date format is weird, we skip the time check but log it
+            print(f"Date check error: {e}")
+    
     # Check if student already attempted this challenge
     attempt_key = f"CHALLENGE_ATTEMPT:{challenge_id}"
     already_attempted = await db.points_log.find_one({

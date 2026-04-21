@@ -76,11 +76,20 @@ function ChallengesStudent({ studentId, studentName }) {
     if (loading) return null;
     
     const now = new Date();
-    // Filter out: inactive, upcoming, and ALREADY ATTEMPTED
+    
+    // Filter out: inactive, upcoming, ALREADY ATTEMPTED, and EXPIRED
     const visibleChallenges = challenges.filter(c => {
         const isActive = c.active === true || c.is_active === true;
         if (!isActive) return false;
-        if (attemptedIds.has(c.id)) return false; // Lock: don't show once answered
+        
+        if (attemptedIds.has(c.id)) return false; 
+
+        // Check if time has ended
+        if (c.end_time) {
+            const end = new Date(c.end_time);
+            if (end < now) return false;
+        }
+
         return true;
     });
 
