@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile, Query
+from fastapi.middleware.gzip import GZipMiddleware
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -26,6 +27,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get("DB_NAME")]
 
 app = FastAPI()
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 api_router = APIRouter(prefix="/api")
 
 # ⭐ هذا المسار مهم ليبقى السيرفر مستيقظ
