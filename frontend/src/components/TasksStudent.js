@@ -11,10 +11,12 @@ function TasksStudent({ studentId, studentName, studentGroup }) {
 
   const fetchTasks = async () => {
     try {
-      // Build query: if studentGroup exists, fetch tasks assigned to that group
-      const url = studentGroup ? `${API}/tasks?group=${encodeURIComponent(studentGroup)}` : `${API}/tasks`;
+      // If studentGroup is missing, we fetch only tasks marked for "All" or ""
+      // We pass a special value to indicate we want public tasks only
+      const searchGroup = studentGroup || "All";
+      const url = `${API}/tasks?group=${encodeURIComponent(searchGroup)}`;
+      
       const res = await axios.get(url);
-      // Filter for tasks that are "available" (not completed)
       setTasks(res.data.filter(t => t.status !== "completed"));
     } catch (err) {
       console.error("Error fetching tasks:", err);

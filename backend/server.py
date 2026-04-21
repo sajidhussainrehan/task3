@@ -746,7 +746,19 @@ async def delete_group(group_id: str):
 
 @api_router.get("/tasks", response_model=List[Task])
 async def get_tasks(group: Optional[str] = Query(None)):
-    query = {} if group is None else {"group": group}
+    query = {}
+    if group:
+        import re
+        # Match the specific group OR match empty/all tasks
+        regex = re.compile(f"^{re.escape(group.strip())}$", re.IGNORECASE)
+        query = {"$or": [
+            {"group": regex},
+            {"group": ""},
+            {"group": None},
+            {"group": "الكل"},
+            {"group": "All"}
+        ]}
+    
     tasks = await db.tasks.find(query, {"_id": 0}).to_list(1000)
     for t in tasks:
         if isinstance(t.get("created_at"), str):
