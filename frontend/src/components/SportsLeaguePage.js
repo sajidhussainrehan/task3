@@ -21,7 +21,7 @@ function SportsLeaguePage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const token = localStorage.getItem("ghiras_token");
-  const lastStudentId = sessionStorage.getItem("last_student_id");
+  const lastStudentId = localStorage.getItem("last_student_id");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,11 +66,15 @@ function SportsLeaguePage() {
   };
 
   const navItems = [
-    { label: "الرئيسية", icon: "🏠", path: lastStudentId ? `/public/${lastStudentId}` : (token ? "/" : "/login") },
+    { 
+      label: "الرئيسية", 
+      icon: "🏠", 
+      path: lastStudentId ? `/public/${lastStudentId}` : "/"
+    },
     { label: "الدوري", icon: "🏆", path: "/league", active: true },
-    { label: "المسابقات", icon: "🕒", path: lastStudentId ? `/public/${lastStudentId}` : "#" },
-    { label: "الاستثمار", icon: "⚡", path: lastStudentId ? `/public/${lastStudentId}` : "#" },
-    { label: "المهام", icon: "📋", path: lastStudentId ? `/public/${lastStudentId}` : "#" },
+    { label: "المسابقات", icon: "🕒", path: lastStudentId ? `/public/${lastStudentId}#challenges` : "#" },
+    { label: "الاستثمار", icon: "⚡", path: lastStudentId ? `/public/${lastStudentId}#investment` : "#" },
+    { label: "المهام", icon: "📋", path: lastStudentId ? `/public/${lastStudentId}#tasks` : "#" },
   ];
 
   if (loading) return <div className="min-h-screen bg-[#0a0f1e] text-white flex items-center justify-center font-black">جاري التحميل...</div>;
