@@ -65,11 +65,15 @@ function SportsLeaguePage() {
   };
 
   const navItems = [
-    { label: "الرئيسية", icon: "🏠", path: lastStudentId ? `/public/${lastStudentId}` : "/" },
+    { 
+      label: "الرئيسية", 
+      icon: "🏠", 
+      path: lastStudentId ? `/public/${lastStudentId}` : "/login"
+    },
     { label: "الدوري", icon: "🏆", path: "/league", active: true },
-    { label: "المسابقات", icon: "🕒", path: lastStudentId ? `/public/${lastStudentId}#challenges` : "#" },
-    { label: "الاستثمار", icon: "⚡", path: lastStudentId ? `/public/${lastStudentId}#investment` : "#" },
-    { label: "المهام", icon: "📋", path: lastStudentId ? `/public/${lastStudentId}#tasks` : "#" },
+    { label: "المسابقات", icon: "🕒", path: lastStudentId ? `/public/${lastStudentId}#challenges` : "/login" },
+    { label: "الاستثمار", icon: "⚡", path: lastStudentId ? `/public/${lastStudentId}#investment` : "/login" },
+    { label: "المهام", icon: "📋", path: lastStudentId ? `/public/${lastStudentId}#tasks` : "/login" },
   ];
 
   if (loading) return <div className="min-h-screen bg-[#0a0f1e] text-white flex items-center justify-center font-black">جاري التحميل...</div>;
