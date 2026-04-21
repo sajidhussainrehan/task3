@@ -25,7 +25,7 @@ function StudentProfilePublic() {
   const fetchStudent = useCallback(async () => {
     try {
       setLoading(true);
-      const [profileRes, matchesRes, leaderboardRes] = await Promise.all([
+      const [profileRes, matchesRes] = await Promise.all([
         axios.get(`${API}/students/${paramId}/profile`).catch(err => {
           console.error("Profile error:", err);
           return { data: { student: null, rank: 0, total_students: 0 } };
@@ -33,23 +33,20 @@ function StudentProfilePublic() {
         axios.get(`${API}/matches/upcoming`).catch(err => {
           console.error("Matches error:", err);
           return { data: [] };
-        }),
-        axios.get(`${API}/students`).catch(err => {
-          console.error("Leaderboard error:", err);
-          return { data: [] };
         })
       ]);
 
       if (profileRes.data && profileRes.data.student) {
         setStudent(profileRes.data.student);
         setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
+        // The leaderboard should be a separate, smaller call or just top 3
+        setLeaderboard([]); // Clear huge leaderboard from local state
         localStorage.setItem("last_student_id", paramId);
       } else {
         setStudent(null);
       }
       
       setUpcomingMatches(matchesRes.data || []);
-      setLeaderboard(leaderboardRes.data || []);
     } catch (err) {
       console.error("Error fetching student:", err);
     } finally {
@@ -233,7 +230,7 @@ function StudentProfilePublic() {
 
           <div className="relative group">
             <div className="w-40 h-40 rounded-full border-8 border-white/20 shadow-2xl overflow-hidden bg-white ring-8 ring-[#006d44]/50 group-hover:scale-105 transition-all duration-500">
-              <img src={student.image_url ? (student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`) : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} className="w-full h-full object-cover" alt={student.name} />
+              <img src={student.image_url ? (student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`) : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} className="w-full h-full object-cover" alt={student.name} loading="lazy" />
             </div>
             <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-2xl shadow-lg border-2 border-white animate-bounce-slow">🏅</div>
           </div>
