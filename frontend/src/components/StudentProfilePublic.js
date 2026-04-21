@@ -25,7 +25,7 @@ function StudentProfilePublic() {
   const fetchStudent = useCallback(async () => {
     try {
       setLoading(true);
-      const [profileRes, matchesRes] = await Promise.all([
+      const [profileRes, matchesRes, leaderboardRes] = await Promise.all([
         axios.get(`${API}/students/${paramId}/profile`).catch(err => {
           console.error("Profile error:", err);
           return { data: { student: null, rank: 0, total_students: 0 } };
@@ -33,20 +33,23 @@ function StudentProfilePublic() {
         axios.get(`${API}/matches/upcoming`).catch(err => {
           console.error("Matches error:", err);
           return { data: [] };
+        }),
+        axios.get(`${API}/students`).catch(err => {
+          console.error("Leaderboard error:", err);
+          return { data: [] };
         })
       ]);
 
       if (profileRes.data && profileRes.data.student) {
         setStudent(profileRes.data.student);
         setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
-        // The leaderboard should be a separate, smaller call or just top 3
-        setLeaderboard([]); // Clear huge leaderboard from local state
         localStorage.setItem("last_student_id", paramId);
       } else {
         setStudent(null);
       }
-      
+
       setUpcomingMatches(matchesRes.data || []);
+      setLeaderboard(leaderboardRes.data || []);
     } catch (err) {
       console.error("Error fetching student:", err);
     } finally {
@@ -64,8 +67,8 @@ function StudentProfilePublic() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 border-4 border-[#006d44] border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-black text-[#006d44] animate-pulse">جاري تحميل بيانات بارع...</p>
+          <div className="w-16 h-16 border-4 border-[#006d44] border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-black text-[#006d44] animate-pulse">جاري تحميل بيانات بارع...</p>
         </div>
       </div>
     );
@@ -75,9 +78,9 @@ function StudentProfilePublic() {
     return (
       <div className="min-h-screen flex items-center justify-center font-bold text-red-500 bg-white p-10 text-center">
         <div>
-            <div className="text-6xl mb-4">⚠️</div>
-            <p className="text-2xl mb-4">عذراً، لم يتم العثور على الطالب</p>
-            <button onClick={() => navigate(-1)} className="bg-gray-100 px-6 py-2 rounded-xl text-gray-600">العودة للخلف</button>
+          <div className="text-6xl mb-4">⚠️</div>
+          <p className="text-2xl mb-4">عذراً، لم يتم العثور على الطالب</p>
+          <button onClick={() => navigate(-1)} className="bg-gray-100 px-6 py-2 rounded-xl text-gray-600">العودة للخلف</button>
         </div>
       </div>
     );
@@ -219,7 +222,7 @@ function StudentProfilePublic() {
       {/* Top Banner & Profile */}
       <div className="relative h-96 bg-gradient-to-br from-[#006d44] to-[#014029] overflow-hidden rounded-b-[4rem] shadow-2xl">
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-        
+
         <div className="absolute inset-0 flex flex-col items-center justify-center z-30">
           {activeSection && (
             <button onClick={() => setActiveSection(null)} className="absolute top-6 right-6 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-black flex items-center gap-2 hover:bg-white/30 transition-all">
@@ -230,11 +233,11 @@ function StudentProfilePublic() {
 
           <div className="relative group">
             <div className="w-40 h-40 rounded-full border-8 border-white/20 shadow-2xl overflow-hidden bg-white ring-8 ring-[#006d44]/50 group-hover:scale-105 transition-all duration-500">
-              <img src={student.image_url ? (student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`) : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} className="w-full h-full object-cover" alt={student.name} loading="lazy" />
+              <img src={student.image_url ? (student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`) : "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"} className="w-full h-full object-cover" alt={student.name} />
             </div>
             <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-2xl shadow-lg border-2 border-white animate-bounce-slow">🏅</div>
           </div>
-          
+
           <div className="text-center mt-6 space-y-4">
             <h2 className="text-4xl font-black tracking-tight text-white drop-shadow-lg">{student.name}</h2>
             <div className="bg-white/10 backdrop-blur-xl px-10 py-3 rounded-full border border-white/20 inline-flex items-center gap-3 shadow-2xl">
