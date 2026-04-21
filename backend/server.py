@@ -890,7 +890,7 @@ async def submit_challenge_answer(challenge_id: str, student_id: str, data: Chal
         "id": str(uuid.uuid4()),
         "student_id": student_id,
         "points": challenge["points"] if is_correct else 0,
-        "reason": f"{attempt_key} | {challenge['question'] if is_correct else 'إجابة خاطئة'}",
+        "reason": f"مسابقة: {challenge['question'] if is_correct else 'إجابة خاطئة'} | {attempt_key}",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "is_correct": is_correct
     }

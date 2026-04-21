@@ -25,17 +25,24 @@ function PointsHistoryStudent({ studentId }) {
   const formatReason = (reason) => {
     if (!reason) return "بدون سبب";
     
-    // Translate challenge participation
-    if (reason.startsWith("CHALLENGE_ATTEMPT:")) {
+    // Clean up English IDs and translate
+    let displayReason = reason;
+
+    if (displayReason.includes("CHALLENGE_ATTEMPT:")) {
+      // If it contains a question at the end (Arabic text)
+      if (displayReason.includes("|")) {
+        const parts = displayReason.split("|");
+        // Find the part that ISN'T the English ID
+        const mainText = parts.find(p => !p.includes("CHALLENGE_ATTEMPT:"));
+        return mainText ? `مسابقة: ${mainText.trim()}` : "مشاركة في مسابقة ثقافية 🏆";
+      }
       return "مشاركة في مسابقة ثقافية 🏆";
     }
     
-    // Clean up task prefixes if any
-    if (reason.startsWith("مهمة: ")) {
-      return reason;
-    }
+    if (displayReason.includes("VIDEO_QUIZ:")) return "إجابة مسابقة فيديو 🎥";
+    if (displayReason.includes("ATTENDANCE:")) return "تسجيل حضور";
 
-    return reason;
+    return displayReason;
   };
 
   if (loading) return null;
