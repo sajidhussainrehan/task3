@@ -15,30 +15,11 @@ const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 function StudentProfilePublic() {
   const { studentId: paramId } = useParams();
   const navigate = useNavigate();
-  const [student, setStudent] = useState(() => {
-    // Load cached profile instantly on first render — no loading spinner needed
-    try {
-      const cached = localStorage.getItem(`profile_cache_${paramId}`);
-      if (cached) return JSON.parse(cached).student;
-    } catch (e) {}
-    return null;
-  });
-  const [rankInfo, setRankInfo] = useState(() => {
-    try {
-      const cached = localStorage.getItem(`profile_cache_${paramId}`);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        return { rank: parsed.rank, total: parsed.total_students };
-      }
-    } catch (e) {}
-    return { rank: 0, total: 0 };
-  });
+  const [student, setStudent] = useState(null);
+  const [rankInfo, setRankInfo] = useState({ rank: 0, total: 0 });
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(() => {
-    // If we have cache, skip the loading spinner entirely
-    return !localStorage.getItem(`profile_cache_${paramId}`);
-  });
+  const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState(null); // null = home view
 
   useEffect(() => {

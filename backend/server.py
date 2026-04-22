@@ -673,7 +673,7 @@ async def add_points(student_id: str, data: PointsUpdate):
 
 
 
-    return rankings
+
 
 @api_router.get("/students/rankings")
 async def get_student_rankings():
