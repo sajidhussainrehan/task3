@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import QuduratStudent from "./QuduratStudent";
@@ -22,46 +22,46 @@ function StudentProfilePublic() {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState(null); // null = home view
 
-  useEffect(() => {
-    if (!paramId) return;
-    let cancelled = false;
+  const fetchStudent = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [profileRes, matchesRes, leaderboardRes] = await Promise.all([
+        axios.get(`${API}/students/${paramId}/profile`).catch(err => {
+          console.error("Profile error:", err);
+          return { data: { student: null, rank: 0, total_students: 0 } };
+        }),
+        axios.get(`${API}/matches/upcoming`).catch(err => {
+          console.error("Matches error:", err);
+          return { data: [] };
+        }),
+        axios.get(`${API}/students`).catch(err => {
+          console.error("Leaderboard error:", err);
+          return { data: [] };
+        })
+      ]);
 
-    const fetchStudent = async () => {
-      try {
-        const [profileRes, matchesRes] = await Promise.all([
-          axios.get(`${API}/students/${paramId}/profile`).catch(err => {
-            console.error("Profile error:", err);
-            return { data: { student: null, rank: 0, total_students: 0 } };
-          }),
-          axios.get(`${API}/matches/upcoming`).catch(err => {
-            console.error("Matches error:", err);
-            return { data: [] };
-          })
-        ]);
-
-        if (cancelled) return;
-
-        if (profileRes.data && profileRes.data.student) {
-          setStudent(profileRes.data.student);
-          setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
-          setLeaderboard([]);
-          localStorage.setItem("last_student_id", paramId);
-          localStorage.setItem(`profile_cache_${paramId}`, JSON.stringify(profileRes.data));
-        } else {
-          setStudent(null);
-        }
-
-        setUpcomingMatches(matchesRes.data || []);
-      } catch (err) {
-        console.error("Error fetching student:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
+      if (profileRes.data && profileRes.data.student) {
+        setStudent(profileRes.data.student);
+        setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
+        localStorage.setItem("last_student_id", paramId);
+      } else {
+        setStudent(null);
       }
-    };
 
-    fetchStudent();
-    return () => { cancelled = true; };
+      setUpcomingMatches(matchesRes.data || []);
+      setLeaderboard(leaderboardRes.data || []);
+    } catch (err) {
+      console.error("Error fetching student:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [paramId]);
+
+  useEffect(() => {
+    if (paramId) {
+      fetchStudent();
+    }
+  }, [paramId, fetchStudent]);
 
   if (loading) {
     return (

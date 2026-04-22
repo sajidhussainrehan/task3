@@ -613,17 +613,18 @@ async def teacher_login(data: TeacherLoginRequest):
 
 @api_router.get("/students/{student_id}/profile")
 async def get_student_profile(student_id: str):
-    # Get the student's full profile
+    # Get all students to calculate rank
+    all_students = await db.students.find({}, {"_id": 0}).to_list(1000)
+    all_students.sort(key=lambda x: x.get("points", 0), reverse=True)
+    
+    # Find student
     student = await db.students.find_one({"id": student_id}, {"_id": 0})
     if not student:
         raise HTTPException(status_code=404, detail="غير موجود")
     
-    # For rank: only fetch id and points (NOT full documents with images)
-    rank_data = await db.students.find({}, {"_id": 0, "id": 1, "points": 1}).to_list(1000)
-    rank_data.sort(key=lambda x: x.get("points", 0), reverse=True)
-    
+    # Calculate rank (1-based index)
     rank = None
-    for i, s in enumerate(rank_data):
+    for i, s in enumerate(all_students):
         if s.get("id") == student_id:
             rank = i + 1
             break
@@ -631,7 +632,7 @@ async def get_student_profile(student_id: str):
     return {
         "student": student,
         "rank": rank,
-        "total_students": len(rank_data)
+        "total_students": len(all_students)
     }
 
 @api_router.put("/students/{student_id}")
@@ -673,8 +674,6 @@ async def add_points(student_id: str, data: PointsUpdate):
 
 
 
-
-
 @api_router.get("/students/rankings")
 async def get_student_rankings():
     """Get all students ranked by points (including image data)"""
@@ -690,22 +689,6 @@ async def get_student_rankings():
             "supervisor": s.get("supervisor", "")
         })
     return rankings
-
-# Optimized endpoints for faster student loading
-@api_router.get("/students/mini")
-async def get_students_mini():
-    """Retrieve only essential student data for fast UI loading (no images)"""
-    students_cursor = db.students.find({}, {"_id": 0, "id": 1, "name": 1, "points": 1, "supervisor": 1})
-    students = await students_cursor.to_list(length=1000)
-    return students
-
-@api_router.get("/students/by-ids")
-async def get_students_by_ids(ids: str = Query(...)):
-    """Fetch multiple students by their IDs in a single lightweight call"""
-    id_list = ids.split(",")
-    students_cursor = db.students.find({"id": {"$in": id_list}}, {"_id": 0, "id": 1, "name": 1, "points": 1, "image_url": 1})
-    students = await students_cursor.to_list(length=100)
-    return students
 
 # Removed duplicate upload-image endpoint to fix conflicts
 @api_router.post("/students/{student_id}/upload-image")

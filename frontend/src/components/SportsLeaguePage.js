@@ -25,39 +25,24 @@ function SportsLeaguePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // SMART CACHE: Try to load students from memory first
-        const cachedStudents = localStorage.getItem("ghiras_students_cache");
-        let stdMap = {};
-        
-        if (cachedStudents) {
-           try {
-             stdMap = JSON.parse(cachedStudents);
-             setStudentMap(stdMap);
-             // We continue fetching in background, but user sees data immediately!
-           } catch(e) {}
-        }
-
         const [standRes, matchRes, upcomingRes, teamRes, studentsRes] = await Promise.all([
           axios.get(`${API}/league-standings`),
           axios.get(`${API}/matches`),
           axios.get(`${API}/matches/upcoming`),
           axios.get(`${API}/teams`),
-          axios.get(`${API}/students/mini`)
+          axios.get(`${API}/students`)
         ]);
-
         setStandings(standRes.data || []);
         setResults((matchRes.data || []).filter(m => m.status === "completed"));
         setUpcomingMatches(upcomingRes.data || []);
         setTeams(teamRes.data || []);
 
-        const newStdMap = {};
+        const stdMap = {};
         (studentsRes.data || []).forEach(s => {
           const sid = s.id || s._id;
-          newStdMap[sid] = { image: s.image_url, points: s.points || 0, name: s.name };
+          stdMap[sid] = { image: s.image_url, points: s.points || 0, name: s.name };
         });
-        
-        setStudentMap(newStdMap);
-        localStorage.setItem("ghiras_students_cache", JSON.stringify(newStdMap));
+        setStudentMap(stdMap);
       } catch (err) {
         console.error("Error fetching league data:", err);
       } finally {
