@@ -674,6 +674,8 @@ async def add_points(student_id: str, data: PointsUpdate):
 
 
 
+    return rankings
+
 @api_router.get("/students/rankings")
 async def get_student_rankings():
     """Get all students ranked by points (including image data)"""
@@ -689,6 +691,22 @@ async def get_student_rankings():
             "supervisor": s.get("supervisor", "")
         })
     return rankings
+
+# Optimized endpoints for faster student loading
+@api_router.get("/students/mini")
+async def get_students_mini():
+    """Retrieve only essential student data for fast UI loading"""
+    students_cursor = db.students.find({}, {"_id": 0, "id": 1, "name": 1, "points": 1, "image_url": 1, "supervisor": 1})
+    students = await students_cursor.to_list(length=1000)
+    return students
+
+@api_router.get("/students/by-ids")
+async def get_students_by_ids(ids: str = Query(...)):
+    """Fetch multiple students by their IDs in a single lightweight call"""
+    id_list = ids.split(",")
+    students_cursor = db.students.find({"id": {"$in": id_list}}, {"_id": 0, "id": 1, "name": 1, "points": 1, "image_url": 1})
+    students = await students_cursor.to_list(length=100)
+    return students
 
 # Removed duplicate upload-image endpoint to fix conflicts
 @api_router.post("/students/{student_id}/upload-image")

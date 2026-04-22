@@ -24,8 +24,20 @@ function StudentProfilePublic() {
 
   const fetchStudent = useCallback(async () => {
     try {
-      setLoading(true);
-      const [profileRes, matchesRes, leaderboardRes] = await Promise.all([
+      // SMART CACHE: Try to load basic profile info instantly
+      const cachedProfile = localStorage.getItem(`profile_cache_${paramId}`);
+      if (cachedProfile && !student) {
+        try {
+          const parsed = JSON.parse(cachedProfile);
+          setStudent(parsed.student);
+          setRankInfo({ rank: parsed.rank, total: parsed.total_students });
+          setLoading(false); // Show UI immediately while fetching fresh data
+        } catch (e) {}
+      } else {
+        setLoading(true);
+      }
+
+      const [profileRes, matchesRes] = await Promise.all([
         axios.get(`${API}/students/${paramId}/profile`).catch(err => {
           console.error("Profile error:", err);
           return { data: { student: null, rank: 0, total_students: 0 } };
@@ -33,29 +45,26 @@ function StudentProfilePublic() {
         axios.get(`${API}/matches/upcoming`).catch(err => {
           console.error("Matches error:", err);
           return { data: [] };
-        }),
-        axios.get(`${API}/students`).catch(err => {
-          console.error("Leaderboard error:", err);
-          return { data: [] };
         })
       ]);
 
       if (profileRes.data && profileRes.data.student) {
         setStudent(profileRes.data.student);
         setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
+        setLeaderboard([]); // Keep it clean for speed
         localStorage.setItem("last_student_id", paramId);
+        localStorage.setItem(`profile_cache_${paramId}`, JSON.stringify(profileRes.data));
       } else {
         setStudent(null);
       }
 
       setUpcomingMatches(matchesRes.data || []);
-      setLeaderboard(leaderboardRes.data || []);
     } catch (err) {
       console.error("Error fetching student:", err);
     } finally {
       setLoading(false);
     }
-  }, [paramId]);
+  }, [paramId, student]);
 
   useEffect(() => {
     if (paramId) {
