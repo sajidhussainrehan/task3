@@ -613,18 +613,17 @@ async def teacher_login(data: TeacherLoginRequest):
 
 @api_router.get("/students/{student_id}/profile")
 async def get_student_profile(student_id: str):
-    # Get all students to calculate rank
-    all_students = await db.students.find({}, {"_id": 0}).to_list(1000)
-    all_students.sort(key=lambda x: x.get("points", 0), reverse=True)
-    
-    # Find student
+    # Get the student's full profile
     student = await db.students.find_one({"id": student_id}, {"_id": 0})
     if not student:
         raise HTTPException(status_code=404, detail="غير موجود")
     
-    # Calculate rank (1-based index)
+    # For rank: only fetch id and points (NOT full documents with images)
+    rank_data = await db.students.find({}, {"_id": 0, "id": 1, "points": 1}).to_list(1000)
+    rank_data.sort(key=lambda x: x.get("points", 0), reverse=True)
+    
     rank = None
-    for i, s in enumerate(all_students):
+    for i, s in enumerate(rank_data):
         if s.get("id") == student_id:
             rank = i + 1
             break
@@ -632,7 +631,7 @@ async def get_student_profile(student_id: str):
     return {
         "student": student,
         "rank": rank,
-        "total_students": len(all_students)
+        "total_students": len(rank_data)
     }
 
 @api_router.put("/students/{student_id}")
@@ -695,8 +694,8 @@ async def get_student_rankings():
 # Optimized endpoints for faster student loading
 @api_router.get("/students/mini")
 async def get_students_mini():
-    """Retrieve only essential student data for fast UI loading"""
-    students_cursor = db.students.find({}, {"_id": 0, "id": 1, "name": 1, "points": 1, "image_url": 1, "supervisor": 1})
+    """Retrieve only essential student data for fast UI loading (no images)"""
+    students_cursor = db.students.find({}, {"_id": 0, "id": 1, "name": 1, "points": 1, "supervisor": 1})
     students = await students_cursor.to_list(length=1000)
     return students
 

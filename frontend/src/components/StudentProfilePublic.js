@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import QuduratStudent from "./QuduratStudent";
@@ -15,62 +15,72 @@ const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 function StudentProfilePublic() {
   const { studentId: paramId } = useParams();
   const navigate = useNavigate();
-  const [student, setStudent] = useState(null);
-  const [rankInfo, setRankInfo] = useState({ rank: 0, total: 0 });
+  const [student, setStudent] = useState(() => {
+    // Load cached profile instantly on first render — no loading spinner needed
+    try {
+      const cached = localStorage.getItem(`profile_cache_${paramId}`);
+      if (cached) return JSON.parse(cached).student;
+    } catch (e) {}
+    return null;
+  });
+  const [rankInfo, setRankInfo] = useState(() => {
+    try {
+      const cached = localStorage.getItem(`profile_cache_${paramId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return { rank: parsed.rank, total: parsed.total_students };
+      }
+    } catch (e) {}
+    return { rank: 0, total: 0 };
+  });
   const [upcomingMatches, setUpcomingMatches] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    // If we have cache, skip the loading spinner entirely
+    return !localStorage.getItem(`profile_cache_${paramId}`);
+  });
   const [activeSection, setActiveSection] = useState(null); // null = home view
 
-  const fetchStudent = useCallback(async () => {
-    try {
-      // SMART CACHE: Try to load basic profile info instantly
-      const cachedProfile = localStorage.getItem(`profile_cache_${paramId}`);
-      if (cachedProfile && !student) {
-        try {
-          const parsed = JSON.parse(cachedProfile);
-          setStudent(parsed.student);
-          setRankInfo({ rank: parsed.rank, total: parsed.total_students });
-          setLoading(false); // Show UI immediately while fetching fresh data
-        } catch (e) {}
-      } else {
-        setLoading(true);
-      }
-
-      const [profileRes, matchesRes] = await Promise.all([
-        axios.get(`${API}/students/${paramId}/profile`).catch(err => {
-          console.error("Profile error:", err);
-          return { data: { student: null, rank: 0, total_students: 0 } };
-        }),
-        axios.get(`${API}/matches/upcoming`).catch(err => {
-          console.error("Matches error:", err);
-          return { data: [] };
-        })
-      ]);
-
-      if (profileRes.data && profileRes.data.student) {
-        setStudent(profileRes.data.student);
-        setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
-        setLeaderboard([]); // Keep it clean for speed
-        localStorage.setItem("last_student_id", paramId);
-        localStorage.setItem(`profile_cache_${paramId}`, JSON.stringify(profileRes.data));
-      } else {
-        setStudent(null);
-      }
-
-      setUpcomingMatches(matchesRes.data || []);
-    } catch (err) {
-      console.error("Error fetching student:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [paramId, student]);
-
   useEffect(() => {
-    if (paramId) {
-      fetchStudent();
-    }
-  }, [paramId, fetchStudent]);
+    if (!paramId) return;
+    let cancelled = false;
+
+    const fetchStudent = async () => {
+      try {
+        const [profileRes, matchesRes] = await Promise.all([
+          axios.get(`${API}/students/${paramId}/profile`).catch(err => {
+            console.error("Profile error:", err);
+            return { data: { student: null, rank: 0, total_students: 0 } };
+          }),
+          axios.get(`${API}/matches/upcoming`).catch(err => {
+            console.error("Matches error:", err);
+            return { data: [] };
+          })
+        ]);
+
+        if (cancelled) return;
+
+        if (profileRes.data && profileRes.data.student) {
+          setStudent(profileRes.data.student);
+          setRankInfo({ rank: profileRes.data.rank, total: profileRes.data.total_students });
+          setLeaderboard([]);
+          localStorage.setItem("last_student_id", paramId);
+          localStorage.setItem(`profile_cache_${paramId}`, JSON.stringify(profileRes.data));
+        } else {
+          setStudent(null);
+        }
+
+        setUpcomingMatches(matchesRes.data || []);
+      } catch (err) {
+        console.error("Error fetching student:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchStudent();
+    return () => { cancelled = true; };
+  }, [paramId]);
 
   if (loading) {
     return (
