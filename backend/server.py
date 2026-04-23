@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, date, timedelta
+import time
 
 # Riyadh timezone (UTC+3) - ensures date matching works correctly for Saudi Arabia
 RIYADH_TZ = timezone(timedelta(hours=3))
@@ -61,6 +62,33 @@ async def create_indexes():
         logging.info("✅ MongoDB indexes created successfully")
     except Exception as e:
         logging.warning(f"⚠️ Index creation warning: {e}")
+
+# ==================== In-Memory Cache for Speed ====================
+class ServerCache:
+    """RAM cache with 15s TTL — eliminates repeated MongoDB round-trips"""
+    def __init__(self, ttl=15):
+        self._store = {}
+        self._timestamps = {}
+        self.ttl = ttl
+
+    def get(self, key):
+        if key in self._store and (time.time() - self._timestamps.get(key, 0)) < self.ttl:
+            return self._store[key]
+        return None
+
+    def set(self, key, value):
+        self._store[key] = value
+        self._timestamps[key] = time.time()
+
+    def clear(self, key=None):
+        if key:
+            self._store.pop(key, None)
+            self._timestamps.pop(key, None)
+        else:
+            self._store.clear()
+            self._timestamps.clear()
+
+cache = ServerCache(ttl=15)
 
 # ⭐ هذا المسار مهم ليبقى السيرفر مستيقظ
 @app.get("/")
@@ -532,6 +560,9 @@ async def bulk_add_points(data: BulkPointsUpdate):
 @api_router.get("/students", response_model=List[Student])
 async def get_students():
     """Retrieve all students sorted by points. Includes image_url for photo visibility."""
+    cached = cache.get("students")
+    if cached is not None:
+        return cached
     students = await db.students.find({}, {"_id": 0}).to_list(1000)
     for s in students:
         if isinstance(s.get("created_at"), str):
@@ -542,6 +573,7 @@ async def get_students():
     
     # Sort students by points (highest first)
     students.sort(key=lambda x: x.get("points", 0), reverse=True)
+    cache.set("students", students)
     return students
 
 @api_router.post("/students", response_model=Student)
@@ -550,6 +582,7 @@ async def create_student(data: StudentCreate):
     doc = student.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     await db.students.insert_one(doc)
+    cache.clear("students")
     return student
 
 @api_router.get("/students/by-teacher/{teacher_id}")
@@ -647,18 +680,17 @@ async def teacher_login(data: TeacherLoginRequest):
 
 @api_router.get("/students/{student_id}/profile")
 async def get_student_profile(student_id: str):
-    # Get all students to calculate rank
-    all_students = await db.students.find({}, {"_id": 0}).to_list(1000)
-    all_students.sort(key=lambda x: x.get("points", 0), reverse=True)
-    
-    # Find student
+    # Get the student's full profile
     student = await db.students.find_one({"id": student_id}, {"_id": 0})
     if not student:
         raise HTTPException(status_code=404, detail="غير موجود")
     
-    # Calculate rank (1-based index)
+    # For rank: only fetch id and points (NOT full documents with images)
+    rank_data = await db.students.find({}, {"_id": 0, "id": 1, "points": 1}).to_list(1000)
+    rank_data.sort(key=lambda x: x.get("points", 0), reverse=True)
+    
     rank = None
-    for i, s in enumerate(all_students):
+    for i, s in enumerate(rank_data):
         if s.get("id") == student_id:
             rank = i + 1
             break
@@ -666,7 +698,7 @@ async def get_student_profile(student_id: str):
     return {
         "student": student,
         "rank": rank,
-        "total_students": len(all_students)
+        "total_students": len(rank_data)
     }
 
 @api_router.put("/students/{student_id}")
@@ -675,6 +707,7 @@ async def update_student(student_id: str, data: StudentUpdate):
     result = await db.students.update_one({"id": student_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="غير موجود")
+    cache.clear("students")
     return {"success": True}
 
 # Use the more robust upload implementation below
@@ -684,6 +717,7 @@ async def delete_student(student_id: str):
     result = await db.students.delete_one({"id": student_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="غير موجود")
+    cache.clear("students")
     return {"deleted": True}
 
 @api_router.put("/students/{student_id}/points")
@@ -703,6 +737,7 @@ async def add_points(student_id: str, data: PointsUpdate):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.points_log.insert_one(log_entry)
+    cache.clear("students")
     
     return {"success": True}
 
@@ -972,10 +1007,14 @@ async def submit_challenge_answer(challenge_id: str, student_id: str, data: Chal
 
 @api_router.get("/matches", response_model=List[Match])
 async def get_matches():
+    cached = cache.get("matches")
+    if cached is not None:
+        return cached
     matches = await db.matches.find({}, {"_id": 0}).to_list(1000)
     for m in matches:
         if isinstance(m.get("created_at"), str):
             m["created_at"] = datetime.fromisoformat(m["created_at"])
+    cache.set("matches", matches)
     return matches
 
 @api_router.post("/matches", response_model=Match)
@@ -984,6 +1023,9 @@ async def create_match(data: MatchCreate):
     doc = match.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     await db.matches.insert_one(doc)
+    cache.clear("matches")
+    cache.clear("upcoming")
+    cache.clear("standings")
     return match
 
 @api_router.put("/matches/{match_id}/score")
@@ -1044,6 +1086,7 @@ async def set_match_score(match_id: str, data: dict):
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         
+    cache.clear()  # Clear all caches since match scores affect students, standings, etc.
     return {"success": True}
 
 @api_router.delete("/matches/{match_id}")
@@ -1051,10 +1094,16 @@ async def delete_match(match_id: str):
     result = await db.matches.delete_one({"id": match_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="غير موجود")
+    cache.clear("matches")
+    cache.clear("upcoming")
+    cache.clear("standings")
     return {"deleted": True}
 
 @api_router.get("/league-standings")
 async def get_league_standings():
+    cached = cache.get("standings")
+    if cached is not None:
+        return cached
     matches = await db.matches.find({"status": "completed"}, {"_id": 0}).to_list(1000)
     standings = {}
     
@@ -1093,7 +1142,9 @@ async def get_league_standings():
         stats["gd"] = 0  # Goal difference
         result.append(stats)
     
-    return sorted(result, key=lambda x: x["points"], reverse=True)
+    result = sorted(result, key=lambda x: x["points"], reverse=True)
+    cache.set("standings", result)
+    return result
 
 @api_router.get("/league-star")
 async def get_league_star():
@@ -1147,17 +1198,26 @@ async def set_league_star(data: LeagueStarCreate):
 @api_router.get("/matches/upcoming")
 async def get_upcoming_matches():
     """Get all matches that are not completed yet (upcoming/scheduled)"""
+    cached = cache.get("upcoming")
+    if cached is not None:
+        return cached
     matches = await db.matches.find({"status": {"$ne": "completed"}}, {"_id": 0}).to_list(1000)
     for m in matches:
         if isinstance(m.get("created_at"), str):
             m["created_at"] = datetime.fromisoformat(m["created_at"])
-    return sorted(matches, key=lambda x: x.get("match_date", ""), reverse=False)
+    result = sorted(matches, key=lambda x: x.get("match_date", ""), reverse=False)
+    cache.set("upcoming", result)
+    return result
 
 # ==================== Team Endpoints ====================
 
 @api_router.get("/teams", response_model=List[Team])
 async def get_teams():
+    cached = cache.get("teams")
+    if cached is not None:
+        return cached
     teams = await db.teams.find({}, {"_id": 0}).to_list(1000)
+    cache.set("teams", teams)
     return teams
 
 @api_router.get("/teams/{name}", response_model=Optional[Team])
