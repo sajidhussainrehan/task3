@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -26,7 +27,40 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get("DB_NAME")]
 
 app = FastAPI()
+app.add_middleware(GZipMiddleware, minimum_size=500)
 api_router = APIRouter(prefix="/api")
+
+# Create database indexes on startup for fast queries
+@app.on_event("startup")
+async def create_indexes():
+    """Create MongoDB indexes for fast lookups - runs once on server start"""
+    try:
+        await db.students.create_index("id", unique=True)
+        await db.students.create_index("points")
+        await db.students.create_index("supervisor")
+        await db.students.create_index("teacher_id")
+        await db.students.create_index("barcode")
+        await db.teachers.create_index("id", unique=True)
+        await db.teachers.create_index("username", unique=True)
+        await db.matches.create_index("id")
+        await db.matches.create_index("status")
+        await db.teams.create_index("id")
+        await db.teams.create_index("name")
+        await db.tasks.create_index("id")
+        await db.tasks.create_index("group")
+        await db.challenges.create_index("id")
+        await db.points_log.create_index("student_id")
+        await db.points_log.create_index("created_at")
+        await db.groups.create_index("id")
+        await db.attendance.create_index("student_id")
+        await db.attendance.create_index("date")
+        await db.attendance.create_index([("student_id", 1), ("date", 1)])
+        await db.halaqa_records.create_index("student_id")
+        await db.halaqa_records.create_index("date")
+        await db.book_summaries.create_index("student_id")
+        logging.info("✅ MongoDB indexes created successfully")
+    except Exception as e:
+        logging.warning(f"⚠️ Index creation warning: {e}")
 
 # ⭐ هذا المسار مهم ليبقى السيرفر مستيقظ
 @app.get("/")
