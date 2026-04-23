@@ -10,6 +10,7 @@ import ViewOnlyDashboard from "./components/ViewOnlyDashboard";
 import TeacherLogin from "./components/TeacherLogin";
 import TeacherDashboard from "./components/TeacherDashboard";
 import GlobalLoader from "./components/GlobalLoader";
+import SportsLeaguePage from "./components/SportsLeaguePage";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("ghiras_token"));
@@ -65,6 +66,7 @@ function App() {
           element={token ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />}
         />
         <Route path="/public/:studentId" element={<StudentProfilePublic />} />
+        <Route path="/league" element={<SportsLeaguePage />} />
         <Route
           path="/challenges"
           element={token ? <ChallengesManager /> : <Navigate to="/login" />}
