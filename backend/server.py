@@ -855,20 +855,40 @@ async def delete_group(group_id: str):
 
 @api_router.get("/tasks", response_model=List[Task])
 async def get_tasks(group: Optional[str] = Query(None)):
-    query = {}
     if group:
-        import re
-        # Match the specific group OR match empty/all tasks
-        regex = re.compile(f"^{re.escape(group.strip())}$", re.IGNORECASE)
-        query = {"$or": [
-            {"group": regex},
-            {"group": ""},
-            {"group": None},
-            {"group": "الكل"},
-            {"group": "All"}
-        ]}
-    
-    tasks = await db.tasks.find(query, {"_id": 0}).to_list(1000)
+        # Normalize Arabic characters for more flexible matching
+        # Handle Alif variants (أ، إ، آ -> ا) and Ta Marbuta (ة -> ه)
+        def normalize_arabic(text):
+            if not text: return ""
+            text = text.strip()
+            text = text.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+            text = text.replace("ة", "ه")
+            return text
+
+        normalized_group = normalize_arabic(group)
+        # Create a regex that allows for these variations
+        # This is a bit complex for a simple regex, so we'll fetch and filter if needed, 
+        # or use a broader regex. Let's use a simpler approach: 
+        # Just match the group if it's universal, otherwise we'll do the normalization check.
+        
+        # We'll fetch all active tasks and filter in Python to be safe with Arabic normalization
+        all_tasks = await db.tasks.find({"status": {"$ne": "completed"}}, {"_id": 0}).to_list(1000)
+        
+        filtered_tasks = []
+        for t in all_tasks:
+            t_group = t.get("group", "")
+            # Check if universal
+            if not t_group or t_group in ["", "الكل", "All"]:
+                filtered_tasks.append(t)
+                continue
+            
+            # Check if matches student group with normalization
+            if normalize_arabic(t_group) == normalized_group:
+                filtered_tasks.append(t)
+        
+        tasks = filtered_tasks
+    else:
+        tasks = await db.tasks.find({}, {"_id": 0}).to_list(1000)
     for t in tasks:
         if isinstance(t.get("created_at"), str):
             t["created_at"] = datetime.fromisoformat(t["created_at"])

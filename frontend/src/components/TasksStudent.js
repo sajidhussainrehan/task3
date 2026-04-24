@@ -11,10 +11,11 @@ function TasksStudent({ studentId, studentName, studentGroup }) {
 
   const fetchTasks = async () => {
     try {
-      // If studentGroup is missing, we fetch only tasks marked for "All" or ""
-      // We pass a special value to indicate we want public tasks only
-      const searchGroup = studentGroup || "All";
-      const url = `${API}/tasks?group=${encodeURIComponent(searchGroup)}`;
+      // If student has a group, fetch tasks for that group + universal tasks
+      // If no group, fetch ALL tasks so the student can still see available work
+      const url = studentGroup 
+        ? `${API}/tasks?group=${encodeURIComponent(studentGroup)}`
+        : `${API}/tasks`;
       
       const res = await axios.get(url);
       setTasks(res.data.filter(t => t.status !== "completed"));

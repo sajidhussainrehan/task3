@@ -20,6 +20,8 @@ function AttendanceManager({ onAttendanceChange }) {
   const [useCameraMode, setUseCameraMode] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState("");
+  const [cameras, setCameras] = useState([]);
+  const [selectedCameraId, setSelectedCameraId] = useState(null);
   const inputRef = useRef(null);
   const scannerRef = useRef(null);
   const lastScannedRef = useRef(null);
@@ -37,10 +39,8 @@ function AttendanceManager({ onAttendanceChange }) {
 
   const [cameraLoading, setCameraLoading] = useState(false);
 
-
-
-  const initializeCamera = async () => {
-    if (cameraActive) {
+  const initializeCamera = async (cameraId = null) => {
+    if (cameraActive && !cameraId) {
       // Stop camera
       if (scannerInstanceRef.current) {
         try {
@@ -61,115 +61,80 @@ function AttendanceManager({ onAttendanceChange }) {
     try {
       lastScannedRef.current = null;
 
+      // Ensure scanner is stopped before starting new one
+      if (scannerInstanceRef.current) {
+        try { await scannerInstanceRef.current.stop(); } catch (e) {}
+      }
+
       // Small delay to ensure DOM element is fully rendered and ready
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Ensure DOM element exists
       const scannerElement = document.getElementById("barcode-scanner");
-      if (!scannerElement) {
-        console.error("Scanner element not found in DOM");
-        throw new Error("Scanner element not ready");
-      }
-      console.log("Scanner element found:", scannerElement);
+      if (!scannerElement) throw new Error("Scanner element not ready");
 
-      console.log("Creating Html5Qrcode instance...");
-
-      // Create scanner instance
       const scanner = new Html5Qrcode("barcode-scanner");
       scannerInstanceRef.current = scanner;
 
-      const onScanSuccess = (decodedText, decodedResult) => {
-        const now = Date.now();
-        if (lastScannedRef.current && now - lastScannedRef.current < 1000) {
-          return;
+      // Get available cameras if we haven't yet
+      let availableCameras = cameras;
+      if (availableCameras.length === 0) {
+        try {
+          availableCameras = await Html5Qrcode.getCameras();
+          setCameras(availableCameras);
+        } catch (e) {
+          console.log("Error getting cameras:", e);
         }
+      }
+
+      const onScanSuccess = (decodedText) => {
+        const now = Date.now();
+        if (lastScannedRef.current && now - lastScannedRef.current < 2000) return;
         lastScannedRef.current = now;
         processBarcodeData(decodedText);
       };
 
-      const onScanError = (error) => {
-        // Suppress continuous scanning errors
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
       };
 
-      console.log("Starting camera...");
-      
-      // Try environment camera first, then fallback to any camera
-      let cameraStarted = false;
-      
-      // First try: environment facing camera
-      try {
-        console.log("Trying environment camera...");
-        await scanner.start(
-          { facingMode: { exact: "environment" } },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-          },
-          onScanSuccess,
-          onScanError
-        );
-        cameraStarted = true;
-        console.log("Environment camera started successfully");
-      } catch (envError) {
-        console.log("Environment camera failed:", envError.message);
-      }
-      
-      // Second try: any available camera
-      if (!cameraStarted) {
+      // Try starting with specific camera or environment mode
+      if (cameraId) {
+        await scanner.start(cameraId, config, onScanSuccess, () => {});
+        setSelectedCameraId(cameraId);
+      } else {
+        // Preferred: try environment camera without 'exact' to be more permissive
         try {
-          console.log("Trying any available camera...");
-          await scanner.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0
-            },
-            onScanSuccess,
-            onScanError
-          );
-          cameraStarted = true;
-          console.log("Camera started successfully with fallback");
-        } catch (anyError) {
-          console.log("Fallback camera failed:", anyError.message);
+          await scanner.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+        } catch (e) {
+          // Fallback: use first available camera
+          if (availableCameras.length > 0) {
+            await scanner.start(availableCameras[0].id, config, onScanSuccess, () => {});
+            setSelectedCameraId(availableCameras[0].id);
+          } else {
+            await scanner.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+          }
         }
       }
       
-      if (!cameraStarted) {
-        throw new Error("Could not start any camera");
-      }
-      
       setCameraActive(true);
-      
     } catch (err) {
       console.error("Camera error:", err);
-      let errorMessage = "❌ لا يمكن فتح الكاميرا";
-      
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        errorMessage = "❌ تم رفض إذن الكاميرا. يرجى السماح بالوصول في إعدادات المتصفح";
-      } else if (err.name === "NotFoundError") {
-        errorMessage = "❌ لم يتم العثور على كاميرا. تأكد من توصيل الكاميرا";
-      } else if (err.name === "NotReadableError") {
-        errorMessage = "❌ الكاميرا مشغولة من تطبيق آخر";
-      } else if (err.message && err.message.includes("Permission")) {
-        errorMessage = "❌ تم رفض إذن الكاميرا";
-      } else if (err.message) {
-        errorMessage = `❌ خطأ: ${err.message}`;
-      }
-      
+      let errorMessage = `❌ لا يمكن فتح الكاميرا: ${err.message || "خطأ غير معروف"}`;
+      if (err.name === "NotAllowedError") errorMessage = "❌ تم رفض إذن الكاميرا. يرجى تفعيل الإذن من إعدادات المتصفح";
       setCameraError(errorMessage);
       setCameraActive(false);
-      
-      if (scannerInstanceRef.current) {
-        try {
-          await scannerInstanceRef.current.stop();
-        } catch (e) {}
-        scannerInstanceRef.current = null;
-      }
     } finally {
       setCameraLoading(false);
     }
+  };
+
+  const switchCamera = async () => {
+    if (cameras.length < 2) return;
+    const currentIndex = cameras.findIndex(c => c.id === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % cameras.length;
+    await initializeCamera(cameras[nextIndex].id);
   };
 
   // Process barcode data (same logic as manual input)
@@ -627,17 +592,25 @@ function AttendanceManager({ onAttendanceChange }) {
                     </div>
                   )}
 
-                  <button
-                    onClick={initializeCamera}
-                    disabled={loading || cameraLoading}
-                    className={`w-full py-3 rounded-lg font-bold border-2 transition-all ${
-                      cameraActive
-                        ? "bg-red-500 hover:bg-red-600 text-white border-black"
-                        : "bg-lime-500 hover:bg-lime-600 text-black border-black"
-                    } ${cameraLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {cameraLoading ? "⏳ جاري التشغيل..." : cameraActive ? "⏹️ إيقاف الكاميرا" : "▶️ تشغيل الكاميرا"}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => initializeCamera()}
+                      className={`flex-1 py-4 rounded-2xl font-bold text-white shadow-lg transition-all active:scale-95 ${
+                        cameraActive ? 'bg-rose-500 hover:bg-rose-600' : 'bg-[#006d44] hover:bg-[#005a38]'
+                      }`}
+                    >
+                      {cameraActive ? '🛑 إيقاف الكاميرا' : '📷 تشغيل الكاميرا'}
+                    </button>
+                    
+                    {cameraActive && cameras.length > 1 && (
+                      <button
+                        onClick={switchCamera}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-6 rounded-2xl font-bold shadow-lg transition-all active:scale-95"
+                      >
+                        🔄 تبديل
+                      </button>
+                    )}
+                  </div>
 
                   <p className="text-xs text-gray-500 text-center">
                     💡 وجه الكاميرا نحو الباركود أو رمز QR للمسح التلقائي
