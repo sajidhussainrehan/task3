@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from starlette.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -576,6 +577,17 @@ async def get_students():
     cache.set("students", students)
     return students
 
+@api_router.get("/students/light")
+async def get_students_light():
+    """Lightweight student list WITHOUT base64 images - for public pages (15KB instead of 150MB)"""
+    cached = cache.get("students_light")
+    if cached is not None:
+        return cached
+    students = await db.students.find({}, {"_id": 0, "image_url": 0}).to_list(1000)
+    students.sort(key=lambda x: x.get("points", 0), reverse=True)
+    cache.set("students_light", students)
+    return students
+
 @api_router.post("/students", response_model=Student)
 async def create_student(data: StudentCreate):
     student = Student(**data.model_dump())
@@ -583,6 +595,7 @@ async def create_student(data: StudentCreate):
     doc["created_at"] = doc["created_at"].isoformat()
     await db.students.insert_one(doc)
     cache.clear("students")
+    cache.clear("students_light")
     return student
 
 @api_router.get("/students/by-teacher/{teacher_id}")
@@ -708,6 +721,7 @@ async def update_student(student_id: str, data: StudentUpdate):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="غير موجود")
     cache.clear("students")
+    cache.clear("students_light")
     return {"success": True}
 
 # Use the more robust upload implementation below
@@ -718,6 +732,7 @@ async def delete_student(student_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="غير موجود")
     cache.clear("students")
+    cache.clear("students_light")
     return {"deleted": True}
 
 @api_router.put("/students/{student_id}/points")
@@ -738,6 +753,7 @@ async def add_points(student_id: str, data: PointsUpdate):
     }
     await db.points_log.insert_one(log_entry)
     cache.clear("students")
+    cache.clear("students_light")
     
     return {"success": True}
 
@@ -778,7 +794,31 @@ async def upload_student_image(student_id: str, file: UploadFile = File(...)):
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="الطالب غير موجود")
+    cache.clear("students")
+    cache.clear("students_light")
     return {"image_url": img_data, "success": True}
+
+@api_router.get("/students/{student_id}/image")
+async def get_student_image(student_id: str):
+    """Serve a student's image as a proper HTTP image with browser caching"""
+    student = await db.students.find_one({"id": student_id}, {"image_url": 1})
+    if not student or not student.get("image_url"):
+        raise HTTPException(status_code=404, detail="No image")
+    
+    img_data = student["image_url"]
+    if img_data.startswith("data:"):
+        try:
+            header, b64_data = img_data.split(",", 1)
+            content_type = header.split(":")[1].split(";")[0]
+            image_bytes = base64.b64decode(b64_data)
+            return Response(
+                content=image_bytes,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"}
+            )
+        except Exception:
+            raise HTTPException(status_code=500, detail="Invalid image data")
+    raise HTTPException(status_code=404, detail="No image")
 
 # ==================== Groups Endpoints ====================
 

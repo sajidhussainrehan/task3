@@ -34,7 +34,7 @@ function StudentProfilePublic() {
           console.error("Matches error:", err);
           return { data: [] };
         }),
-        axios.get(`${API}/students`).catch(err => {
+        axios.get(`${API}/students/light`).catch(err => {
           console.error("Leaderboard error:", err);
           return { data: [] };
         })

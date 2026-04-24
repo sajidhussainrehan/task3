@@ -30,7 +30,7 @@ function SportsLeaguePage() {
           axios.get(`${API}/matches`),
           axios.get(`${API}/matches/upcoming`),
           axios.get(`${API}/teams`),
-          axios.get(`${API}/students`)
+          axios.get(`${API}/students/light`)
         ]);
         setStandings(standRes.data || []);
         setResults((matchRes.data || []).filter(m => m.status === "completed"));
@@ -40,7 +40,7 @@ function SportsLeaguePage() {
         const stdMap = {};
         (studentsRes.data || []).forEach(s => {
           const sid = s.id || s._id;
-          stdMap[sid] = { image: s.image_url, points: s.points || 0, name: s.name };
+          stdMap[sid] = { image: `${API}/students/${sid}/image`, points: s.points || 0, name: s.name };
         });
         setStudentMap(stdMap);
       } catch (err) {
