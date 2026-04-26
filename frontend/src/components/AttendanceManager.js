@@ -142,18 +142,32 @@ function AttendanceManager({ onAttendanceChange }) {
     const trimmed = barcodeData.trim();
     if (!trimmed || !session) return;
 
+    console.log("Barcode scanned:", trimmed);
     const parsedInput = parseBarcode(trimmed);
+    console.log("Parsed input:", parsedInput);
 
-    const student = students.find(s => 
-      s.id.toLowerCase() === parsedInput.toLowerCase() ||
-      s.id.toLowerCase() === trimmed.toLowerCase() ||
-      (s.barcode && s.barcode.toLowerCase() === trimmed.toLowerCase()) ||
-      (s.barcode && s.barcode.toLowerCase() === parsedInput.toLowerCase()) ||
-      s.name.includes(trimmed)
-    );
+    // Robust matching logic
+    const student = students.find(s => {
+      const sid = s.id?.toLowerCase() || "";
+      const sbc = s.barcode?.toLowerCase() || "";
+      const sph = s.phone || "";
+      const sname = s.name || "";
+      const input = trimmed.toLowerCase();
+      const pInput = parsedInput.toLowerCase();
+
+      return sid === pInput || 
+             sid === input || 
+             (sbc && sbc === input) || 
+             (sbc && sbc === pInput) ||
+             (sph && sph === input) ||
+             sname.includes(trimmed) ||
+             // Numeric equality check (handles leading zeros)
+             (sbc && parseInt(sbc) === parseInt(input)) ||
+             (sid && parseInt(sid) === parseInt(input));
+    });
 
     if (!student) {
-      setMessage("❌ الطالب غير موجود - تأكد من مسح باركود صحيح");
+      setMessage(`❌ الطالب غير موجود: (${trimmed}) - تأكد من الباركود`);
       setScannedStudent(null);
       return;
     }
