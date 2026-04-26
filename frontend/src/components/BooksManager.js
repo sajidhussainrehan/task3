@@ -15,6 +15,11 @@ function BooksManager() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [summaries, setSummaries] = useState([]);
   const [showSummaries, setShowSummaries] = useState(false);
+  const [reviewData, setReviewData] = useState({
+    summary_id: null,
+    points: 0,
+    status: "approved"
+  });
 
   const fetchBooks = async () => {
     try {
@@ -209,13 +214,30 @@ function BooksManager() {
                     <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap bg-white rounded-lg p-3 border">{s.summary_text}</p>
                     
                     {s.status === "pending" && (
-                      <div className="flex gap-2">
-                        <button onClick={() => reviewSummary(s.id, "approved", selectedBook.points_for_summary)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                          ✅ اعتماد (+{selectedBook.points_for_summary} نقطة)
-                        </button>
-                        <button onClick={() => reviewSummary(s.id, "rejected", 0)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                          ❌ رفض
-                        </button>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
+                          <label className="text-xs font-bold text-gray-500">النقاط المستحقة (الافتراضي: {selectedBook.points_for_summary})</label>
+                          <input 
+                            type="number"
+                            value={reviewData.summary_id === s.id ? reviewData.points : selectedBook.points_for_summary}
+                            onChange={(e) => setReviewData({ ...reviewData, summary_id: s.id, points: parseInt(e.target.value) || 0 })}
+                            className="w-24 px-3 py-1 border-2 border-gray-200 rounded-lg focus:border-lime-500 outline-none font-bold"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              const pts = reviewData.summary_id === s.id ? reviewData.points : selectedBook.points_for_summary;
+                              reviewSummary(s.id, "approved", pts);
+                            }} 
+                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex-1"
+                          >
+                            ✅ اعتماد
+                          </button>
+                          <button onClick={() => reviewSummary(s.id, "rejected", 0)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex-1">
+                            ❌ رفض
+                          </button>
+                        </div>
                       </div>
                     )}
                     {s.status === "approved" && s.points_awarded > 0 && (
