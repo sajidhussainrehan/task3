@@ -146,32 +146,47 @@ function SportsLeaguePage() {
                     <button onClick={() => setSelectedTeam(null)} className="w-10 h-10 bg-white/10 text-white rounded-full font-black">✕</button>
                   </div>
 
-                  {/* PHOTO ACCURATE PITCH UI */}
-                  <div className="relative aspect-[3/4.5] bg-[#388e3c] rounded-3xl overflow-hidden border-4 border-white/20 shadow-inner">
-                    {/* Vibrant stripes pattern */}
-                    <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(180deg, rgba(255,255,255,0.1) 0, rgba(255,255,255,0.1) 8%, transparent 8%, transparent 16%)' }}></div>
+                  {/* Stadium pitch (design-only refresh) */}
+                  <div className="relative aspect-[3/4.5] bg-gradient-to-b from-[#0d8d55] to-[#046b3f] rounded-3xl overflow-hidden border-4 border-emerald-400/40 shadow-[inset_0_0_40px_rgba(0,0,0,0.35)]">
+                    {/* Grass stripes */}
+                    <div
+                      className="absolute inset-0 opacity-35 pointer-events-none"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0, rgba(255,255,255,0.08) 12.5%, transparent 12.5%, transparent 25%)"
+                      }}
+                    ></div>
 
-                    {/* Field markings in light mode */}
-                    <div className="absolute inset-3 border-2 border-white/40 pointer-events-none rounded-xl"></div>
-                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40"></div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/40 rounded-full"></div>
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-40 h-20 border-2 border-white/40 bg-white/5"></div>
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-40 h-24 border-2 border-white/40 bg-white/5"></div>
+                    {/* Soft lighting */}
+                    <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_45%,rgba(255,255,255,0.2),transparent_55%)]"></div>
 
-                    {/* Players logic */}
+                    {/* Pitch markings */}
+                    <div className="absolute inset-3 border-2 border-white/45 pointer-events-none rounded-xl"></div>
+                    <div className="absolute top-1/2 left-3 right-3 h-[2px] bg-white/45"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border-2 border-white/45 rounded-full"></div>
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/45 bg-white/5"></div>
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-10 border-2 border-white/45 bg-white/5"></div>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-44 h-20 border-2 border-white/45 bg-white/5"></div>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-20 h-10 border-2 border-white/45 bg-white/5"></div>
+                    <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-r-2 border-white/40 rounded-tr-md"></div>
+                    <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-l-2 border-white/40 rounded-tl-md"></div>
+                    <div className="absolute bottom-3 left-3 w-3 h-3 border-b-2 border-r-2 border-white/40 rounded-br-md"></div>
+                    <div className="absolute bottom-3 right-3 w-3 h-3 border-b-2 border-l-2 border-white/40 rounded-bl-md"></div>
+
+                    {/* Players */}
                     {selectedTeam.lineup && selectedTeam.lineup.map(player => {
                       const std = studentMap[player.student_id] || {};
                       const pos = getPlayerPosition(player.y);
                       return (
                         <div key={player.student_id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${player.x}%`, top: `${player.y}%` }}>
-                          <div className="flex flex-col items-center group scale-[0.85] sm:scale-100">
-                            {/* Badge at TOP */}
-                            <div className={`${pos.color} text-white text-[8px] font-black px-2.5 py-1 rounded-full shadow-lg border border-white/30 -mb-2 z-20`}>
+                          <div className="flex flex-col items-center">
+                            {/* Position badge */}
+                            <div className={`${pos.color} text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-lg border border-white/50 -mb-2 z-20 tracking-wide`}>
                               {pos.label}
                             </div>
 
-                            {/* Avatar */}
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full p-1 shadow-2xl border-2 border-[#a5d6a7]">
+                            {/* Player avatar */}
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/95 rounded-full p-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.35)] border-[3px] border-emerald-300">
                               <div className="w-full h-full rounded-full overflow-hidden bg-gray-200">
                                 {getImageUrl(player.image_url || std.image) ? (
                                   <img src={getImageUrl(player.image_url || std.image)} className="w-full h-full object-cover" alt="" />
@@ -179,15 +194,15 @@ function SportsLeaguePage() {
                               </div>
                             </div>
 
-                            {/* Name Overlay in White */}
-                            <p className="text-white font-black text-[10px] sm:text-[12px] mt-1 whitespace-nowrap drop-shadow-lg uppercase tracking-tighter">
+                            {/* Name */}
+                            <p className="text-white font-black text-[11px] sm:text-[13px] mt-1.5 whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] px-2 text-center leading-tight max-w-[120px] truncate">
                               {player.name}
                             </p>
 
-                            {/* Points Visibility Fix with Star */}
-                            <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1.5 mt-0.5 border border-white/10 scale-90">
-                              <span className="text-yellow-400 text-xs text-shadow-sm">⭐</span>
-                              <span className="text-white font-black text-xs leading-none">{std.points || 0}+</span>
+                            {/* Points */}
+                            <div className="bg-black/55 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 mt-1 border border-white/20">
+                              <span className="text-yellow-400 text-sm">⭐</span>
+                              <span className="text-white font-black text-xs leading-none">+{std.points || 0}</span>
                             </div>
                           </div>
                         </div>
