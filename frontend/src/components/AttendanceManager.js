@@ -343,18 +343,21 @@ function AttendanceManager({ onAttendanceChange }) {
 
   // Extract student ID from various barcode/QR formats
   const parseBarcode = (input) => {
+    if (!input) return "";
     const trimmed = input.trim();
     
-    // Case 1: QR code URL like http://localhost:3001/public/{student_id}
-    // or https://yourdomain.com/public/{student_id}
-    const publicMatch = trimmed.match(/\/public\/([a-f0-9-]+)/i);
+    // Case 1: Search for any UUID-like pattern (32 or 36 chars with hyphens)
+    // This handles URLs, raw IDs, or IDs wrapped in other text
+    const uuidPattern = /([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
+    const uuidMatch = trimmed.match(uuidPattern);
+    if (uuidMatch) return uuidMatch[1];
+
+    // Case 2: QR code URL like http://.../public/{anything}
+    // Matches everything after /public/ until the next slash or end of string
+    const publicMatch = trimmed.match(/\/public\/([^/?#\s]+)/i);
     if (publicMatch) return publicMatch[1];
     
-    // Case 2: Direct student ID (UUID format)
-    const uuidMatch = trimmed.match(/^[a-f0-9-]{36}$/i);
-    if (uuidMatch) return trimmed;
-    
-    // Case 3: Return raw input (could be name or other format)
+    // Case 3: Return raw input (could be a short barcode or name)
     return trimmed;
   };
 
