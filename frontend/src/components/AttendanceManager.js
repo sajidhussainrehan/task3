@@ -39,6 +39,38 @@ function AttendanceManager({ onAttendanceChange }) {
 
   const [cameraLoading, setCameraLoading] = useState(false);
 
+  const normalizeScanValue = (value) => {
+    if (!value) return "";
+    return value
+      .toString()
+      .trim()
+      .replace(/^[\s"'`([{<]+/, "")
+      .replace(/[\s"'`)\]}>.,;:!?]+$/, "")
+      .toLowerCase();
+  };
+
+  const matchStudentFromList = (studentList, rawValue, parsedValue) => {
+    const input = normalizeScanValue(rawValue);
+    const parsed = normalizeScanValue(parsedValue);
+
+    return studentList.find((s) => {
+      const sid = normalizeScanValue(s.id);
+      const sbc = normalizeScanValue(s.barcode);
+      const sph = normalizeScanValue(s.phone);
+      const sname = (s.name || "").trim();
+
+      return sid === parsed ||
+             sid === input ||
+             (sbc && sbc === input) ||
+             (sbc && sbc === parsed) ||
+             (sph && sph === input) ||
+             sname.includes(rawValue.trim()) ||
+             // Numeric equality check (handles leading zeros)
+             (sbc && !Number.isNaN(Number(sbc)) && !Number.isNaN(Number(input)) && Number(sbc) === Number(input)) ||
+             (sid && !Number.isNaN(Number(sid)) && !Number.isNaN(Number(input)) && Number(sid) === Number(input));
+    });
+  };
+
   const initializeCamera = async (cameraId = null) => {
     if (cameraActive && !cameraId) {
       // Stop camera
@@ -146,25 +178,18 @@ function AttendanceManager({ onAttendanceChange }) {
     const parsedInput = parseBarcode(trimmed);
     console.log("Parsed input:", parsedInput);
 
-    // Robust matching logic
-    const student = students.find(s => {
-      const sid = s.id?.toLowerCase() || "";
-      const sbc = s.barcode?.toLowerCase() || "";
-      const sph = s.phone || "";
-      const sname = s.name || "";
-      const input = trimmed.toLowerCase();
-      const pInput = parsedInput.toLowerCase();
+    // 1) Try current in-memory list first (fast path)
+    let student = matchStudentFromList(students, trimmed, parsedInput);
 
-      return sid === pInput || 
-             sid === input || 
-             (sbc && sbc === input) || 
-             (sbc && sbc === pInput) ||
-             (sph && sph === input) ||
-             sname.includes(trimmed) ||
-             // Numeric equality check (handles leading zeros)
-             (sbc && parseInt(sbc) === parseInt(input)) ||
-             (sid && parseInt(sid) === parseInt(input));
-    });
+    // 2) Fallback to lightweight fresh list in case local list is stale/incomplete
+    if (!student) {
+      try {
+        const freshStudents = await axios.get(`${API}/students/light`);
+        student = matchStudentFromList(freshStudents.data || [], trimmed, parsedInput);
+      } catch (err) {
+        console.error("Fallback student lookup failed:", err);
+      }
+    }
 
     if (!student) {
       setMessage(`❌ الطالب غير موجود: (${trimmed}) - تأكد من الباركود`);
