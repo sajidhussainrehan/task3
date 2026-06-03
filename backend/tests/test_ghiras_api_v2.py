@@ -417,7 +417,7 @@ class TestFootballLeague:
         standings = standings_res.json()
         team1_standing = next((s for s in standings if s["team"] == team1), None)
         assert team1_standing is not None
-        print(f"✓ Standings show {team1}: {team1_standing['points']} pts")
+        print(f"✓ Standings show {team1}")
         
         # DELETE match
         delete_res = requests.delete(f"{BASE_URL}/api/matches/{match_id}", headers=headers)

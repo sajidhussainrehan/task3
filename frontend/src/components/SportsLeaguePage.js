@@ -123,7 +123,6 @@ function SportsLeaguePage() {
                   {getTeamPhoto(team.team) ? <img src={getTeamPhoto(team.team)} alt="" className="w-10 h-10 rounded-lg object-cover" /> : <div className="w-10 h-10 bg-[#1f2637] rounded-lg"></div>}
                   <p className="font-black text-sm">{team.team}</p>
                 </div>
-                <p className="text-[#00a86b] text-xl font-black italic">{team.points}</p>
               </div>
             ))}
           </div>

@@ -206,7 +206,6 @@ function ViewOnlyDashboard({ onLogout }) {
                       <th className="p-3">فاز</th>
                       <th className="p-3">تعادل</th>
                       <th className="p-3">خسر</th>
-                      <th className="p-3 font-bold">النقاط</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -218,7 +217,6 @@ function ViewOnlyDashboard({ onLogout }) {
                         <td className="p-3 text-center text-lime-600">{team.wins || 0}</td>
                         <td className="p-3 text-center text-yellow-600">{team.draws || 0}</td>
                         <td className="p-3 text-center text-red-600">{team.losses || 0}</td>
-                        <td className="p-3 text-center font-bold text-blue-600">{team.points}</td>
                       </tr>
                     ))}
                   </tbody>

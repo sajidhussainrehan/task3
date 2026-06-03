@@ -1102,50 +1102,7 @@ async def set_match_score(match_id: str, data: dict):
         {"id": match_id},
         {"$set": {"score1": score1, "score2": score2, "status": "completed"}}
     )
-    
-    # Award points to students in the groups
-    team1 = match["team1"]
-    team2 = match["team2"]
-    
-    points1 = 0
-    points2 = 0
-    reason1 = ""
-    reason2 = ""
-    
-    if score1 > score2:
-        points1, points2 = 15, 5
-        reason1, reason2 = f"فوز في الدوري ضد {team2}", f"مشاركة في الدوري (خسارة) ضد {team1}"
-    elif score2 > score1:
-        points1, points2 = 5, 15
-        reason1, reason2 = f"مشاركة في الدوري (خسارة) ضد {team2}", f"فوز في الدوري ضد {team1}"
-    else:
-        points1, points2 = 10, 10
-        reason1, reason2 = f"تعادل في الدوري ضد {team2}", f"تعادل في الدوري ضد {team1}"
 
-    # Award points to team1
-    students1 = await db.students.find({"supervisor": team1}).to_list(1000)
-    for s in students1:
-        await db.students.update_one({"id": s["id"]}, {"$inc": {"points": points1}})
-        await db.points_log.insert_one({
-            "id": str(uuid.uuid4()),
-            "student_id": s["id"],
-            "points": points1,
-            "reason": reason1,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-
-    # Award points to team2
-    students2 = await db.students.find({"supervisor": team2}).to_list(1000)
-    for s in students2:
-        await db.students.update_one({"id": s["id"]}, {"$inc": {"points": points2}})
-        await db.points_log.insert_one({
-            "id": str(uuid.uuid4()),
-            "student_id": s["id"],
-            "points": points2,
-            "reason": reason2,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        
     cache.clear()  # Clear all caches since match scores affect students, standings, etc.
     return {"success": True}
 
@@ -1174,23 +1131,19 @@ async def get_league_standings():
         score2 = match.get("score2", 0)
         
         if team1 not in standings:
-            standings[team1] = {"wins": 0, "losses": 0, "draws": 0, "points": 0}
+            standings[team1] = {"wins": 0, "losses": 0, "draws": 0}
         if team2 not in standings:
-            standings[team2] = {"wins": 0, "losses": 0, "draws": 0, "points": 0}
+            standings[team2] = {"wins": 0, "losses": 0, "draws": 0}
         
         if score1 > score2:
             standings[team1]["wins"] += 1
-            standings[team1]["points"] += 3
             standings[team2]["losses"] += 1
         elif score2 > score1:
             standings[team2]["wins"] += 1
-            standings[team2]["points"] += 3
             standings[team1]["losses"] += 1
         else:
             standings[team1]["draws"] += 1
-            standings[team1]["points"] += 1
             standings[team2]["draws"] += 1
-            standings[team2]["points"] += 1
     
     # Convert to list of objects with team property
     result = []
@@ -1202,7 +1155,7 @@ async def get_league_standings():
         stats["gd"] = 0  # Goal difference
         result.append(stats)
     
-    result = sorted(result, key=lambda x: x["points"], reverse=True)
+    result = sorted(result, key=lambda x: (x["wins"], x["draws"]), reverse=True)
     cache.set("standings", result)
     return result
 

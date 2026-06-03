@@ -139,7 +139,6 @@ function ViewerPage({ token }) {
                     <th className="p-2">خسر</th>
                     <th className="p-2">له</th>
                     <th className="p-2">عليه</th>
-                    <th className="p-2 font-bold">النقاط</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -153,7 +152,6 @@ function ViewerPage({ token }) {
                       <td className="p-2 text-center text-red-600">{t.lost}</td>
                       <td className="p-2 text-center">{t.gf}</td>
                       <td className="p-2 text-center">{t.ga}</td>
-                      <td className="p-2 text-center font-bold text-lime-600">{t.points}</td>
                     </tr>
                   ))}
                 </tbody>
