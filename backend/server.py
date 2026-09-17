@@ -7,7 +7,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import base64
+import io
 from pathlib import Path
+from PIL import Image
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
@@ -532,6 +534,8 @@ async def reset_all_points():
     result = await db.students.update_many({}, {"$set": {"points": 0}})
     # Clear points log too
     await db.points_log.delete_many({})
+    cache.clear("students")
+    cache.clear("students_light")
     return {"success": True, "reset_count": result.modified_count}
 
 @api_router.put("/students/bulk-points")
@@ -540,22 +544,28 @@ async def bulk_add_points(data: BulkPointsUpdate):
     import re
     group_pattern = re.compile(f"^{re.escape(data.group.strip())}$", re.IGNORECASE)
     
-    students = await db.students.find({"supervisor": group_pattern}, {"_id": 0}).to_list(1000)
-    
+    students = await db.students.find({"supervisor": group_pattern}, {"_id": 0, "id": 1}).to_list(1000)
+
     if len(students) == 0:
         raise HTTPException(status_code=404, detail=f"لا يوجد طلاب في المجموعة: {data.group}")
-    
-    for student in students:
-        await db.students.update_one({"id": student["id"]}, {"$inc": {"points": data.points}})
-        log_entry = {
+
+    student_ids = [s["id"] for s in students]
+    await db.students.update_many({"id": {"$in": student_ids}}, {"$inc": {"points": data.points}})
+    now_iso = datetime.now(timezone.utc).isoformat()
+    log_entries = [
+        {
             "id": str(uuid.uuid4()),
-            "student_id": student["id"],
+            "student_id": sid,
             "points": data.points,
             "reason": data.reason,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_iso
         }
-        await db.points_log.insert_one(log_entry)
-    
+        for sid in student_ids
+    ]
+    await db.points_log.insert_many(log_entries)
+    cache.clear("students")
+    cache.clear("students_light")
+
     return {"success": True, "count": len(students)}
 
 @api_router.get("/students", response_model=List[Student])
@@ -775,19 +785,36 @@ async def get_student_rankings():
         })
     return rankings
 
+MAX_IMAGE_DIMENSION = 800
+IMAGE_JPEG_QUALITY = 78
+
+def compress_image_bytes(content: bytes, fallback_content_type: str):
+    """Resize+JPEG-compress uploaded image bytes. Falls back to the original
+    bytes if the upload isn't a decodable image (e.g. corrupt file)."""
+    try:
+        img = Image.open(io.BytesIO(content))
+        img = img.convert("RGB")
+        img.thumbnail((MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION), Image.LANCZOS)
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=IMAGE_JPEG_QUALITY, optimize=True)
+        return buffer.getvalue(), "image/jpeg"
+    except Exception:
+        return content, fallback_content_type
+
 # Removed duplicate upload-image endpoint to fix conflicts
 @api_router.post("/students/{student_id}/upload-image")
 async def upload_student_image(student_id: str, file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
          raise HTTPException(status_code=400, detail="الملف يجب أن يكون صورة")
-         
+
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="حجم الصورة كبير جداً (الأقصى 5 ميجابايت)")
-        
-    base64_img = base64.b64encode(content).decode("utf-8")
-    img_data = f"data:{file.content_type};base64,{base64_img}"
-    
+
+    compressed, content_type = compress_image_bytes(content, file.content_type)
+    base64_img = base64.b64encode(compressed).decode("utf-8")
+    img_data = f"data:{content_type};base64,{base64_img}"
+
     result = await db.students.update_one(
         {"id": student_id},
         {"$set": {"image_url": img_data}}
@@ -840,7 +867,21 @@ async def create_group(data: GroupCreate):
 
 @api_router.put("/groups/{group_id}", response_model=Group)
 async def update_group(group_id: str, data: GroupCreate):
+    existing = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="غير موجود")
+
+    old_name = existing.get("name")
     await db.groups.update_one({"id": group_id}, {"$set": {"name": data.name}})
+
+    if old_name and old_name != data.name:
+        # Renaming a group must cascade to every student in it, or they
+        # become "orphaned" (still tagged with the old name) and vanish
+        # from every group-filtered view in the dashboard.
+        await db.students.update_many({"supervisor": old_name}, {"$set": {"supervisor": data.name}})
+        cache.clear("students")
+        cache.clear("students_light")
+
     updated = await db.groups.find_one({"id": group_id}, {"_id": 0})
     return updated
 
@@ -1218,7 +1259,7 @@ async def get_upcoming_matches():
     for m in matches:
         if isinstance(m.get("created_at"), str):
             m["created_at"] = datetime.fromisoformat(m["created_at"])
-    result = sorted(matches, key=lambda x: x.get("match_date", ""), reverse=False)
+    result = sorted(matches, key=lambda x: x.get("match_date") or "", reverse=False)
     cache.set("upcoming", result)
     return result
 
@@ -1261,14 +1302,16 @@ async def create_or_update_team(data: TeamCreate):
 @api_router.post("/teams/{name}/upload-photo")
 async def upload_team_photo(name: str, file: UploadFile = File(...)):
     content = await file.read()
-    base64_img = base64.b64encode(content).decode("utf-8")
-    img_data = f"data:{file.content_type};base64,{base64_img}"
-    
+    compressed, content_type = compress_image_bytes(content, file.content_type)
+    base64_img = base64.b64encode(compressed).decode("utf-8")
+    img_data = f"data:{content_type};base64,{base64_img}"
+
     await db.teams.update_one(
         {"name": name},
         {"$set": {"group_photo": img_data}},
         upsert=True
     )
+    cache.clear("teams")
     return {"image_url": img_data}
 
 # ==================== Points Log Endpoints ====================
@@ -1557,11 +1600,14 @@ async def finalize_attendance_session(session_id: str):
     scanned_records = await db.attendance_records.find({"session_id": session_id}, {"_id": 0}).to_list(1000)
     scanned_student_ids = {r["student_id"] for r in scanned_records}
     
-    absent_count = 0
     # Process absent students
-    for student in all_students:
-        if student["id"] not in scanned_student_ids:
-            # Create absent record
+    absent_students = [s for s in all_students if s["id"] not in scanned_student_ids]
+
+    if absent_students:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        absent_records = []
+        log_entries = []
+        for student in absent_students:
             absent_record = AttendanceRecord(
                 session_id=session_id,
                 student_id=student["id"],
@@ -1573,21 +1619,25 @@ async def finalize_attendance_session(session_id: str):
             )
             doc = absent_record.model_dump()
             doc["scanned_at"] = doc["scanned_at"].isoformat()
-            await db.attendance_records.insert_one(doc)
-            
-            # Deduct points
-            await db.students.update_one({"id": student["id"]}, {"$inc": {"points": -30}})
-            
-            # Log points
-            log_entry = {
+            absent_records.append(doc)
+            log_entries.append({
                 "id": str(uuid.uuid4()),
                 "student_id": student["id"],
                 "points": -30,
                 "reason": "غياب",
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.points_log.insert_one(log_entry)
-            absent_count += 1
+                "created_at": now_iso
+            })
+
+        await db.attendance_records.insert_many(absent_records)
+        await db.students.update_many(
+            {"id": {"$in": [s["id"] for s in absent_students]}},
+            {"$inc": {"points": -30}}
+        )
+        await db.points_log.insert_many(log_entries)
+        cache.clear("students")
+        cache.clear("students_light")
+
+    absent_count = len(absent_students)
     
     # Mark session as finalized
     await db.attendance_sessions.update_one(
