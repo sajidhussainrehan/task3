@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState, lazy, Suspense } from "react";
+import { useState, Suspense, lazy } from "react";
 import GlobalLoader from "./components/GlobalLoader";
 
-// Each page is loaded on demand so visitors only download the code they use
 const Dashboard = lazy(() => import("./components/DashboardNew"));
 const StudentProfilePublic = lazy(() => import("./components/StudentProfilePublic"));
 const ChallengesManager = lazy(() => import("./components/ChallengesManager"));
@@ -13,6 +12,19 @@ const ViewOnlyDashboard = lazy(() => import("./components/ViewOnlyDashboard"));
 const TeacherLogin = lazy(() => import("./components/TeacherLogin"));
 const TeacherDashboard = lazy(() => import("./components/TeacherDashboard"));
 const SportsLeaguePage = lazy(() => import("./components/SportsLeaguePage"));
+
+function RouteFallback() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: "50%",
+        border: "4px solid #bbf7d0", borderTopColor: "#16a34a",
+        animation: "spin 0.8s linear infinite"
+      }} />
+      <style>{"@keyframes spin { to { transform: rotate(360deg); } }"}</style>
+    </div>
+  );
+}
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("ghiras_token"));
@@ -58,41 +70,41 @@ function App() {
   return (
     <BrowserRouter>
       <GlobalLoader />
-      <Suspense fallback={<div className="min-h-screen bg-white" />}>
-      <Routes>
-        <Route
-          path="/"
-          element={token ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/login"
-          element={token ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />}
-        />
-        <Route path="/public/:studentId" element={<StudentProfilePublic />} />
-        <Route path="/league" element={<SportsLeaguePage />} />
-        <Route
-          path="/challenges"
-          element={token ? <ChallengesManager /> : <Navigate to="/login" />}
-        />
-        <Route path="/view/:viewerToken" element={<ViewerRoute />} />
-        <Route
-          path="/viewonly"
-          element={viewOnlyToken ? <ViewOnlyDashboard onLogout={handleViewOnlyLogout} /> : <Navigate to="/viewonly-login" />}
-        />
-        <Route
-          path="/viewonly-login"
-          element={viewOnlyToken ? <Navigate to="/viewonly" /> : <ViewOnlyLogin onLogin={handleViewOnlyLogin} />}
-        />
-        <Route
-          path="/teacher"
-          element={teacherToken ? <TeacherDashboard onLogout={handleTeacherLogout} teacherData={getTeacherData()} /> : <Navigate to="/teacher-login" />}
-        />
-        <Route
-          path="/teacher-login"
-          element={teacherToken ? <Navigate to="/teacher" /> : <TeacherLogin onLogin={handleTeacherLogin} />}
-        />
-        <Route path="*" element={<Navigate to={token ? "/" : "/login"} />} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route
+            path="/"
+            element={token ? <Dashboard onLogout={handleLogout} /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/login"
+            element={token ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />}
+          />
+          <Route path="/public/:studentId" element={<StudentProfilePublic />} />
+          <Route path="/league" element={<SportsLeaguePage />} />
+          <Route
+            path="/challenges"
+            element={token ? <ChallengesManager /> : <Navigate to="/login" />}
+          />
+          <Route path="/view/:viewerToken" element={<ViewerRoute />} />
+          <Route
+            path="/viewonly"
+            element={viewOnlyToken ? <ViewOnlyDashboard onLogout={handleViewOnlyLogout} /> : <Navigate to="/viewonly-login" />}
+          />
+          <Route
+            path="/viewonly-login"
+            element={viewOnlyToken ? <Navigate to="/viewonly" /> : <ViewOnlyLogin onLogin={handleViewOnlyLogin} />}
+          />
+          <Route
+            path="/teacher"
+            element={teacherToken ? <TeacherDashboard onLogout={handleTeacherLogout} teacherData={getTeacherData()} /> : <Navigate to="/teacher-login" />}
+          />
+          <Route
+            path="/teacher-login"
+            element={teacherToken ? <Navigate to="/teacher" /> : <TeacherLogin onLogin={handleTeacherLogin} />}
+          />
+          <Route path="*" element={<Navigate to={token ? "/" : "/login"} />} />
+        </Routes>
       </Suspense>
     </BrowserRouter>
   );

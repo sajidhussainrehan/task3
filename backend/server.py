@@ -955,7 +955,21 @@ async def create_group(data: GroupCreate):
 
 @api_router.put("/groups/{group_id}", response_model=Group)
 async def update_group(group_id: str, data: GroupCreate):
+    existing = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="غير موجود")
+
+    old_name = existing.get("name")
     await db.groups.update_one({"id": group_id}, {"$set": {"name": data.name}})
+
+    if old_name and old_name != data.name:
+        # Renaming a group must cascade to every student in it, or they
+        # become "orphaned" (still tagged with the old name) and vanish
+        # from every group-filtered view in the dashboard.
+        await db.students.update_many({"supervisor": old_name}, {"$set": {"supervisor": data.name}})
+        cache.clear("students")
+        cache.clear("students_light")
+
     updated = await db.groups.find_one({"id": group_id}, {"_id": 0})
     return updated
 
@@ -1327,7 +1341,7 @@ async def get_upcoming_matches():
     for m in matches:
         if isinstance(m.get("created_at"), str):
             m["created_at"] = datetime.fromisoformat(m["created_at"])
-    result = sorted(matches, key=lambda x: x.get("match_date", ""), reverse=False)
+    result = sorted(matches, key=lambda x: x.get("match_date") or "", reverse=False)
     cache.set("upcoming", result)
     return result
 
