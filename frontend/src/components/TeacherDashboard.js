@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { getImageUrl } from "../lib/images";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -183,7 +184,7 @@ function TeacherDashboard({ onLogout, teacherData }) {
                     {index + 1}
                   </div>
                   {student.image_url ? (
-                    <img src={student.image_url} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-lime-200" />
+                    <img src={getImageUrl(student.image_url)} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-lime-200" />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-lg">
                       {student.name.charAt(0)}
@@ -221,7 +222,7 @@ function TeacherDashboard({ onLogout, teacherData }) {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} dir="rtl">
             <div className="flex items-center gap-3 mb-4">
               {selectedStudent.image_url ? (
-                <img src={selectedStudent.image_url} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-lime-300" />
+                <img src={getImageUrl(selectedStudent.image_url)} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-lime-300" />
               ) : (
                 <div className="w-14 h-14 rounded-full bg-lime-100 text-green-700 flex items-center justify-center font-bold text-xl">
                   {selectedStudent.name.charAt(0)}

@@ -1,12 +1,5 @@
 import { useRef, useState } from "react";
-
-const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
-
-const getImageUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('data:') || url.startsWith('http')) return url;
-  return `${API_BASE}${url}`;
-};
+import { getImageUrl } from "../lib/images";
 
 function LeaderboardTicker({ students }) {
   const tickerRef = useRef(null);

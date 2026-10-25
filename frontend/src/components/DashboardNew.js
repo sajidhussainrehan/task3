@@ -14,15 +14,10 @@ import QuduratManager from "./QuduratManager";
 import TeacherManagement from "./TeacherManagement";
 import ChallengesManager from "./ChallengesManager";
 import BooksManager from "./BooksManager";
+import { getImageUrl } from "../lib/images";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
-
-const getImageUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('data:') || url.startsWith('http')) return url;
-  return `${API_BASE}${url}`;
-};
 
 const SUPERVISOR_COLORS = [
   { bg: "bg-emerald-50", text: "text-[#006d44]", border: "border-[#006d44]/30", gradient: "from-[#006d44] to-[#014029]" },
@@ -270,7 +265,7 @@ function Dashboard({ onLogout }) {
         <div className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white py-3 px-4">
           <div className="container mx-auto flex items-center justify-center gap-3 text-center">
             <span className="text-xl">⭐</span>
-            {leagueStar.image_url && <img src={leagueStar.image_url} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-white/40" />}
+            {leagueStar.image_url && <img src={getImageUrl(leagueStar.image_url)} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-white/40" />}
             <span className="font-bold">نجم الدوري: {leagueStar.student_name}</span>
             <span className="text-yellow-100 text-sm">✨ {leagueStar.reason}</span>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { getImageUrl } from "../lib/images";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -98,7 +99,7 @@ function BooksStudent({ studentId, studentName }) {
                 <div className="flex gap-0">
                   <div className="w-32 h-44 bg-gradient-to-br from-amber-100 to-orange-50 flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {book.cover_image ? (
-                      <img src={book.cover_image} alt={book.title} className="w-full h-full object-cover" />
+                      <img src={getImageUrl(book.cover_image)} alt={book.title} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-5xl">📖</span>
                     )}

@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { getImageUrl } from "../lib/images";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 const StudentAvatar = ({ student, size = "w-10 h-10", textSize = "text-sm" }) => {
   if (student.image_url) {
-    const src = student.image_url.startsWith('data:') ? student.image_url : `${API_BASE}${student.image_url}`;
+    const src = getImageUrl(student.image_url);
     return <img src={src} alt="" className={`${size} rounded-full object-cover border-2 border-white shadow-sm`} />;
   }
   return <div className={`${size} rounded-full bg-gradient-to-br from-lime-400 to-green-500 flex items-center justify-center ${textSize} font-bold text-white shadow-sm border-2 border-black`}>{student.name?.charAt(0)}</div>;
@@ -76,7 +77,7 @@ function ViewerPage({ token }) {
             <p className="text-3xl">⭐</p>
             <p className="text-sm opacity-80 mb-1">نجم الدوري</p>
             {leagueStar.image_url ? (
-              <img src={leagueStar.image_url.startsWith('data:') ? leagueStar.image_url : `${API_BASE}${leagueStar.image_url}`} alt="" className="w-20 h-20 rounded-full object-cover border-4 border-white/40 mx-auto shadow-lg" />
+              <img src={getImageUrl(leagueStar.image_url)} alt="" className="w-20 h-20 rounded-full object-cover border-4 border-white/40 mx-auto shadow-lg" />
             ) : (
               <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-3xl font-bold mx-auto">{leagueStar.student_name?.charAt(0)}</div>
             )}

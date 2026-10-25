@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { getImageUrl } from "../lib/images";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -111,7 +112,7 @@ function PointsModal({ student, onClose, onUpdatePoints, loading: parentLoading 
           <div className="flex items-center gap-4">
             {student.image_url ? (
               <img
-                src={student.image_url}
+                src={getImageUrl(student.image_url)}
                 alt={student.name}
                 className="w-16 h-16 rounded-full object-cover border-4 border-white/30"
               />

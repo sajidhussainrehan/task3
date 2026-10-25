@@ -5,14 +5,21 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import io
 import logging
 import base64
 from pathlib import Path
+from urllib.parse import quote
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, date, timedelta
 import time
+
+try:
+    from PIL import Image, ImageOps
+except ImportError:  # Pillow is optional - uploads are stored as-is without it
+    Image = None
 
 # Riyadh timezone (UTC+3) - ensures date matching works correctly for Saudi Arabia
 RIYADH_TZ = timezone(timedelta(hours=3))
@@ -60,6 +67,15 @@ async def create_indexes():
         await db.halaqa_records.create_index("student_id")
         await db.halaqa_records.create_index("date")
         await db.book_summaries.create_index("student_id")
+        await db.book_summaries.create_index("book_id")
+        await db.books.create_index("id")
+        await db.attendance_sessions.create_index("id")
+        await db.attendance_sessions.create_index("date")
+        await db.attendance_records.create_index([("session_id", 1), ("student_id", 1)])
+        await db.attendance_records.create_index("student_id")
+        await db.league_star.create_index("created_at")
+        await db.qudurat_submissions.create_index([("qudurat_id", 1), ("student_id", 1)])
+        await db.viewer_links.create_index("token")
         logging.info("✅ MongoDB indexes created successfully")
     except Exception as e:
         logging.warning(f"⚠️ Index creation warning: {e}")
@@ -90,6 +106,108 @@ class ServerCache:
             self._timestamps.clear()
 
 cache = ServerCache(ttl=15)
+
+# ==================== Image Helpers ====================
+# Images are stored in MongoDB as base64 data URLs. List endpoints must never
+# send them inline - they return a short URL to a dedicated image endpoint
+# instead, so each image is downloaded once and cached by the browser.
+
+def shrink_image(content: bytes, content_type: str, max_size: int):
+    """Resize an image so its longest side is at most max_size px and re-encode as JPEG.
+    Returns the original bytes if Pillow is missing or the file can't be decoded."""
+    if Image is None:
+        return content, content_type
+    try:
+        img = ImageOps.exif_transpose(Image.open(io.BytesIO(content)))
+        img.thumbnail((max_size, max_size))
+        if img.mode in ("RGBA", "LA", "P"):
+            img = img.convert("RGBA")
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[-1])
+            img = background
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+        out = io.BytesIO()
+        img.save(out, format="JPEG", quality=82, optimize=True)
+        return out.getvalue(), "image/jpeg"
+    except Exception as e:
+        logging.warning(f"Image resize failed, storing original: {e}")
+        return content, content_type
+
+def to_data_url(content: bytes, content_type: str) -> str:
+    return f"data:{content_type};base64,{base64.b64encode(content).decode('utf-8')}"
+
+def data_url_response(img_data: Optional[str], versioned: bool) -> Response:
+    """Serve a stored data URL as a real image response with browser caching."""
+    if not img_data or not img_data.startswith("data:"):
+        raise HTTPException(status_code=404, detail="No image")
+    try:
+        header, b64_data = img_data.split(",", 1)
+        content_type = header.split(":")[1].split(";")[0]
+        image_bytes = base64.b64decode(b64_data)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Invalid image data")
+    # Versioned URLs change whenever the image changes, so they can be cached forever
+    cache_control = "public, max-age=31536000, immutable" if versioned else "public, max-age=86400"
+    return Response(content=image_bytes, media_type=content_type, headers={"Cache-Control": cache_control})
+
+def is_data_url_expr(field: str) -> dict:
+    """MongoDB expression: true when the field holds a base64 data URL."""
+    return {"$regexMatch": {"input": {"$toString": {"$ifNull": [f"${field}", ""]}}, "regex": "^data:"}}
+
+# Replaces the base64 image_url with "/api/students/{id}/image?v=N" inside MongoDB,
+# so the image bytes never leave the database for list queries.
+STUDENT_IMAGE_URL_FIELD = {
+    "image_url": {
+        "$cond": [
+            is_data_url_expr("image_url"),
+            {"$concat": [
+                "/api/students/", {"$toString": "$id"},
+                "/image?v=", {"$toString": {"$ifNull": ["$image_version", 0]}},
+            ]},
+            "$image_url",
+        ]
+    }
+}
+
+async def find_students(match: Optional[dict] = None, limit: int = 1000) -> list:
+    """Fetch students with image_url replaced by a short image endpoint URL."""
+    pipeline = [
+        {"$match": match or {}},
+        {"$addFields": STUDENT_IMAGE_URL_FIELD},
+        {"$project": {"_id": 0}},
+    ]
+    return await db.students.aggregate(pipeline).to_list(limit)
+
+async def student_image_urls(student_ids: list) -> dict:
+    """Map student id -> image endpoint URL (or None) for the given ids."""
+    if not student_ids:
+        return {}
+    students = await find_students({"id": {"$in": list(set(student_ids))}})
+    return {s["id"]: s.get("image_url") for s in students}
+
+def team_photo_url(name: str, version) -> str:
+    return f"/api/teams/{quote(name, safe='')}/photo?v={version or 0}"
+
+async def find_teams(match: Optional[dict] = None) -> list:
+    """Fetch teams without base64 photos; group_photo and lineup images become URLs."""
+    pipeline = [
+        {"$match": match or {}},
+        {"$addFields": {
+            "photo_is_data": is_data_url_expr("group_photo"),
+            "group_photo": {"$cond": [is_data_url_expr("group_photo"), "", {"$ifNull": ["$group_photo", ""]}]},
+        }},
+        {"$project": {"_id": 0, "lineup.image_url": 0}},
+    ]
+    teams = await db.teams.aggregate(pipeline).to_list(100)
+    ids = [p.get("student_id") for t in teams for p in (t.get("lineup") or []) if p.get("student_id")]
+    img_map = await student_image_urls(ids)
+    for team in teams:
+        if team.pop("photo_is_data", False):
+            team["group_photo"] = team_photo_url(team["name"], team.get("photo_version"))
+        for player in team.get("lineup") or []:
+            player["image_url"] = img_map.get(player.get("student_id"))
+    return teams
 
 # ⭐ هذا المسار مهم ليبقى السيرفر مستيقظ
 @app.get("/")
@@ -532,6 +650,8 @@ async def reset_all_points():
     result = await db.students.update_many({}, {"$set": {"points": 0}})
     # Clear points log too
     await db.points_log.delete_many({})
+    cache.clear("students")
+    cache.clear("students_light")
     return {"success": True, "reset_count": result.modified_count}
 
 @api_router.put("/students/bulk-points")
@@ -540,31 +660,33 @@ async def bulk_add_points(data: BulkPointsUpdate):
     import re
     group_pattern = re.compile(f"^{re.escape(data.group.strip())}$", re.IGNORECASE)
     
-    students = await db.students.find({"supervisor": group_pattern}, {"_id": 0}).to_list(1000)
-    
+    students = await db.students.find({"supervisor": group_pattern}, {"_id": 0, "id": 1}).to_list(1000)
+
     if len(students) == 0:
         raise HTTPException(status_code=404, detail=f"لا يوجد طلاب في المجموعة: {data.group}")
-    
-    for student in students:
-        await db.students.update_one({"id": student["id"]}, {"$inc": {"points": data.points}})
-        log_entry = {
-            "id": str(uuid.uuid4()),
-            "student_id": student["id"],
-            "points": data.points,
-            "reason": data.reason,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.points_log.insert_one(log_entry)
-    
+
+    student_ids = [s["id"] for s in students]
+    await db.students.update_many({"id": {"$in": student_ids}}, {"$inc": {"points": data.points}})
+    now = datetime.now(timezone.utc).isoformat()
+    await db.points_log.insert_many([{
+        "id": str(uuid.uuid4()),
+        "student_id": sid,
+        "points": data.points,
+        "reason": data.reason,
+        "created_at": now
+    } for sid in student_ids])
+    cache.clear("students")
+    cache.clear("students_light")
+
     return {"success": True, "count": len(students)}
 
 @api_router.get("/students", response_model=List[Student])
 async def get_students():
-    """Retrieve all students sorted by points. Includes image_url for photo visibility."""
+    """Retrieve all students sorted by points. image_url is a link to /students/{id}/image, never base64."""
     cached = cache.get("students")
     if cached is not None:
         return cached
-    students = await db.students.find({}, {"_id": 0}).to_list(1000)
+    students = await find_students()
     for s in students:
         if isinstance(s.get("created_at"), str):
             try:
@@ -583,7 +705,7 @@ async def get_students_light():
     cached = cache.get("students_light")
     if cached is not None:
         return cached
-    students = await db.students.find({}, {"_id": 0, "image_url": 0}).to_list(1000)
+    students = await find_students()
     students.sort(key=lambda x: x.get("points", 0), reverse=True)
     cache.set("students_light", students)
     return students
@@ -601,7 +723,7 @@ async def create_student(data: StudentCreate):
 @api_router.get("/students/by-teacher/{teacher_id}")
 async def get_students_by_teacher(teacher_id: str):
     """Get all students assigned to a specific teacher"""
-    students = await db.students.find({"teacher_id": teacher_id}, {"_id": 0}).to_list(1000)
+    students = await find_students({"teacher_id": teacher_id})
     for s in students:
         if isinstance(s.get("created_at"), str):
             s["created_at"] = datetime.fromisoformat(s["created_at"])
@@ -694,9 +816,10 @@ async def teacher_login(data: TeacherLoginRequest):
 @api_router.get("/students/{student_id}/profile")
 async def get_student_profile(student_id: str):
     # Get the student's full profile
-    student = await db.students.find_one({"id": student_id}, {"_id": 0})
-    if not student:
+    found = await find_students({"id": student_id}, limit=1)
+    if not found:
         raise HTTPException(status_code=404, detail="غير موجود")
+    student = found[0]
     
     # For rank: only fetch id and points (NOT full documents with images)
     rank_data = await db.students.find({}, {"_id": 0, "id": 1, "points": 1}).to_list(1000)
@@ -717,6 +840,14 @@ async def get_student_profile(student_id: str):
 @api_router.put("/students/{student_id}")
 async def update_student(student_id: str, data: StudentUpdate):
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    # Clients now receive image URLs, not base64 - never let one overwrite the stored image
+    update_data.pop("image", None)
+    if not str(update_data.get("image_url", "data:")).startswith("data:"):
+        update_data.pop("image_url")
+    if "image_url" in update_data:
+        update_data["image_version"] = int(time.time())
+    if not update_data:
+        return {"success": True}
     result = await db.students.update_one({"id": student_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="غير موجود")
@@ -737,7 +868,7 @@ async def delete_student(student_id: str):
 
 @api_router.put("/students/{student_id}/points")
 async def add_points(student_id: str, data: PointsUpdate):
-    student = await db.students.find_one({"id": student_id})
+    student = await db.students.find_one({"id": student_id}, {"_id": 0, "name": 1})
     if not student:
         raise HTTPException(status_code=404, detail="غير موجود")
     
@@ -761,8 +892,8 @@ async def add_points(student_id: str, data: PointsUpdate):
 
 @api_router.get("/students/rankings")
 async def get_student_rankings():
-    """Get all students ranked by points (including image data)"""
-    students = await db.students.find({}, {"_id": 0}).to_list(1000)
+    """Get all students ranked by points"""
+    students = await db.students.find({}, {"_id": 0, "id": 1, "name": 1, "points": 1, "supervisor": 1}).to_list(1000)
     students.sort(key=lambda x: x.get("points", 0), reverse=True)
     rankings = []
     for i, s in enumerate(students):
@@ -784,41 +915,25 @@ async def upload_student_image(student_id: str, file: UploadFile = File(...)):
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="حجم الصورة كبير جداً (الأقصى 5 ميجابايت)")
-        
-    base64_img = base64.b64encode(content).decode("utf-8")
-    img_data = f"data:{file.content_type};base64,{base64_img}"
-    
+
+    content, content_type = shrink_image(content, file.content_type, max_size=400)
+    version = int(time.time())
+
     result = await db.students.update_one(
         {"id": student_id},
-        {"$set": {"image_url": img_data}}
+        {"$set": {"image_url": to_data_url(content, content_type), "image_version": version}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="الطالب غير موجود")
     cache.clear("students")
     cache.clear("students_light")
-    return {"image_url": img_data, "success": True}
+    return {"image_url": f"/api/students/{student_id}/image?v={version}", "success": True}
 
 @api_router.get("/students/{student_id}/image")
-async def get_student_image(student_id: str):
+async def get_student_image(student_id: str, v: Optional[str] = None):
     """Serve a student's image as a proper HTTP image with browser caching"""
     student = await db.students.find_one({"id": student_id}, {"image_url": 1})
-    if not student or not student.get("image_url"):
-        raise HTTPException(status_code=404, detail="No image")
-    
-    img_data = student["image_url"]
-    if img_data.startswith("data:"):
-        try:
-            header, b64_data = img_data.split(",", 1)
-            content_type = header.split(":")[1].split(";")[0]
-            image_bytes = base64.b64decode(b64_data)
-            return Response(
-                content=image_bytes,
-                media_type=content_type,
-                headers={"Cache-Control": "public, max-age=86400"}
-            )
-        except Exception:
-            raise HTTPException(status_code=500, detail="Invalid image data")
-    raise HTTPException(status_code=404, detail="No image")
+    return data_url_response(student.get("image_url") if student else None, versioned=v is not None)
 
 # ==================== Groups Endpoints ====================
 
@@ -912,7 +1027,7 @@ async def claim_task(task_id: str, student_id: str):
         raise HTTPException(status_code=404, detail="مهمة غير موجودة")
     
     # Get student name
-    student = await db.students.find_one({"id": student_id})
+    student = await db.students.find_one({"id": student_id}, {"_id": 0, "name": 1})
     student_name = student.get("name", "Unknown") if student else "Unknown"
     
     await db.tasks.update_one(
@@ -1161,24 +1276,24 @@ async def get_league_standings():
 
 @api_router.get("/league-star")
 async def get_league_star():
-    star = await db.league_star.find_one({}, {"_id": 0}, sort=[("created_at", -1)])
+    star = await db.league_star.find_one({}, {"_id": 0, "image_url": 0, "image": 0}, sort=[("created_at", -1)])
     if not star:
         return {"message": "لا يوجد نجم دوري حتى الآن"}
-    
-    # Try to get the latest student image to keep star photo up to date
-    if star.get("student_id"):
-        student = await db.students.find_one({"id": star["student_id"]}, {"image_url": 1})
-        if student and student.get("image_url"):
-            star["image_url"] = student["image_url"]
-            
+
+    # Always show the student's current photo (as a URL, not base64)
+    img_map = await student_image_urls([star.get("student_id")] if star.get("student_id") else [])
+    star["image_url"] = img_map.get(star.get("student_id"))
+
     if isinstance(star.get("created_at"), str):
         star["created_at"] = datetime.fromisoformat(star["created_at"])
     return star
 
 @api_router.get("/league-stars", response_model=List[LeagueStar])
 async def get_league_stars():
-    stars = await db.league_star.find({}, {"_id": 0}).to_list(1000)
+    stars = await db.league_star.find({}, {"_id": 0, "image_url": 0, "image": 0}).to_list(1000)
+    img_map = await student_image_urls([s.get("student_id") for s in stars if s.get("student_id")])
     for s in stars:
+        s["image_url"] = img_map.get(s.get("student_id"))
         if isinstance(s.get("created_at"), str):
             s["created_at"] = datetime.fromisoformat(s["created_at"])
     return sorted(stars, key=lambda x: x.get("created_at", datetime.now(timezone.utc)), reverse=True)
@@ -1187,19 +1302,13 @@ async def get_league_stars():
 async def set_league_star(data: LeagueStarCreate):
     week = datetime.now(timezone.utc).isocalendar()[1]
     star_id = str(uuid.uuid4())
-    
-    # Fetch image directly from DB to avoid missing image issue
-    image_url = data.image_url or data.image
-    if not image_url and data.student_id:
-        student_doc = await db.students.find_one({"id": data.student_id}, {"image_url": 1})
-        if student_doc:
-            image_url = student_doc.get("image_url")
-    
+
+    # The photo is not copied here - it is looked up from the student when the star is read
     star_doc = {
         "id": star_id,
         "student_id": data.student_id,
         "student_name": data.student_name,
-        "image_url": image_url,
+        "image_url": None,
         "reason": data.reason,
         "week": week,
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -1224,52 +1333,57 @@ async def get_upcoming_matches():
 
 # ==================== Team Endpoints ====================
 
-@api_router.get("/teams", response_model=List[Team])
+@api_router.get("/teams")
 async def get_teams():
     cached = cache.get("teams")
     if cached is not None:
         return cached
-    teams = await db.teams.find({}, {"_id": 0}).to_list(1000)
+    teams = await find_teams()
     cache.set("teams", teams)
     return teams
 
-@api_router.get("/teams/{name}", response_model=Optional[Team])
+@api_router.get("/teams/{name}")
 async def get_team_by_name(name: str):
-    team = await db.teams.find_one({"name": name}, {"_id": 0})
-    return team
+    teams = await find_teams({"name": name})
+    if teams:
+        return teams[0]
+    return {"name": name, "group_photo": "", "lineup": []}
 
-@api_router.post("/teams", response_model=Team)
+@api_router.post("/teams")
 async def create_or_update_team(data: TeamCreate):
-    existing = await db.teams.find_one({"name": data.name})
-    if existing:
-        await db.teams.update_one(
-            {"name": data.name},
-            {"$set": {
-                "group_photo": data.group_photo,
-                "lineup": data.lineup
-            }}
-        )
-        updated = await db.teams.find_one({"name": data.name}, {"_id": 0})
-        return Team(**updated)
-    
-    team = Team(**data.model_dump())
-    doc = team.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
-    await db.teams.insert_one(doc)
-    return team
+    # Lineup photos are looked up from students on read, so don't store copies
+    lineup = [{k: v for k, v in p.items() if k != "image_url"} for p in data.lineup]
+    update = {"name": data.name, "lineup": lineup}
+    # Clients receive the photo as a URL; only a new base64 upload may replace it
+    if data.group_photo and data.group_photo.startswith("data:"):
+        update["group_photo"] = data.group_photo
+        update["photo_version"] = int(time.time())
+    await db.teams.update_one(
+        {"name": data.name},
+        {"$set": update, "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    cache.clear("teams")
+    return {"success": True}
 
 @api_router.post("/teams/{name}/upload-photo")
 async def upload_team_photo(name: str, file: UploadFile = File(...)):
     content = await file.read()
-    base64_img = base64.b64encode(content).decode("utf-8")
-    img_data = f"data:{file.content_type};base64,{base64_img}"
-    
+    content, content_type = shrink_image(content, file.content_type or "image/png", max_size=1200)
+    version = int(time.time())
+
     await db.teams.update_one(
         {"name": name},
-        {"$set": {"group_photo": img_data}},
+        {"$set": {"group_photo": to_data_url(content, content_type), "photo_version": version}},
         upsert=True
     )
-    return {"image_url": img_data}
+    cache.clear("teams")
+    return {"image_url": team_photo_url(name, version)}
+
+@api_router.get("/teams/{name}/photo")
+async def get_team_photo(name: str, v: Optional[str] = None):
+    team = await db.teams.find_one({"name": name}, {"group_photo": 1})
+    return data_url_response(team.get("group_photo") if team else None, versioned=v is not None)
 
 # ==================== Points Log Endpoints ====================
 
@@ -1345,7 +1459,7 @@ async def submit_quiz_answer(data: RamadanQuizAnswer):
     await db.ramadan_answers.insert_one(answer_doc)
     
     if is_correct:
-        student = await db.students.find_one({"id": data.student_id})
+        student = await db.students.find_one({"id": data.student_id}, {"_id": 0, "name": 1})
         if student:
             await db.students.update_one({"id": data.student_id}, {"$inc": {"points": question["points"]}})
             log_entry = {
@@ -1396,7 +1510,7 @@ async def create_halaqa_grade(data: HalaqaGradeCreate):
     await db.halaqa_grades.insert_one(doc)
     
     # Add points to student
-    student = await db.students.find_one({"id": data.student_id})
+    student = await db.students.find_one({"id": data.student_id}, {"_id": 0, "name": 1})
     if student:
         await db.students.update_one({"id": data.student_id}, {"$inc": {"points": total_points}})
         log_entry = {
@@ -1476,9 +1590,10 @@ async def scan_student_barcode(session_id: str, data: AttendanceScan):
         raise HTTPException(status_code=400, detail="الجلسة منتهية - لا يمكن تسجيل حضور")
     
     # Find student by ID
-    student = await db.students.find_one({"id": data.student_id}, {"_id": 0})
-    if not student:
+    found = await find_students({"id": data.student_id}, limit=1)
+    if not found:
         raise HTTPException(status_code=404, detail="الطالب غير موجود")
+    student = found[0]
     
     # Check if already scanned in this session
     existing_record = await db.attendance_records.find_one({
@@ -1518,7 +1633,9 @@ async def scan_student_barcode(session_id: str, data: AttendanceScan):
     
     # Update student points
     await db.students.update_one({"id": data.student_id}, {"$inc": {"points": points}})
-    
+    cache.clear("students")
+    cache.clear("students_light")
+
     # Log points
     log_entry = {
         "id": str(uuid.uuid4()),
@@ -1556,13 +1673,15 @@ async def finalize_attendance_session(session_id: str):
     # Get already scanned students
     scanned_records = await db.attendance_records.find({"session_id": session_id}, {"_id": 0}).to_list(1000)
     scanned_student_ids = {r["student_id"] for r in scanned_records}
-    
-    absent_count = 0
-    # Process absent students
-    for student in all_students:
-        if student["id"] not in scanned_student_ids:
-            # Create absent record
-            absent_record = AttendanceRecord(
+
+    # Process absent students in bulk (one write per collection instead of 3 per student)
+    absent_students = [s for s in all_students if s["id"] not in scanned_student_ids]
+    absent_count = len(absent_students)
+    if absent_students:
+        now = datetime.now(timezone.utc).isoformat()
+        absent_docs = []
+        for student in absent_students:
+            doc = AttendanceRecord(
                 session_id=session_id,
                 student_id=student["id"],
                 student_name=student["name"],
@@ -1570,25 +1689,24 @@ async def finalize_attendance_session(session_id: str):
                 status="absent",
                 points=-30,  # Deduct 30 points for absence
                 is_late_period=False
-            )
-            doc = absent_record.model_dump()
+            ).model_dump()
             doc["scanned_at"] = doc["scanned_at"].isoformat()
-            await db.attendance_records.insert_one(doc)
-            
-            # Deduct points
-            await db.students.update_one({"id": student["id"]}, {"$inc": {"points": -30}})
-            
-            # Log points
-            log_entry = {
-                "id": str(uuid.uuid4()),
-                "student_id": student["id"],
-                "points": -30,
-                "reason": "غياب",
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.points_log.insert_one(log_entry)
-            absent_count += 1
-    
+            absent_docs.append(doc)
+        await db.attendance_records.insert_many(absent_docs)
+
+        absent_ids = [s["id"] for s in absent_students]
+        await db.students.update_many({"id": {"$in": absent_ids}}, {"$inc": {"points": -30}})
+
+        await db.points_log.insert_many([{
+            "id": str(uuid.uuid4()),
+            "student_id": sid,
+            "points": -30,
+            "reason": "غياب",
+            "created_at": now
+        } for sid in absent_ids])
+        cache.clear("students")
+        cache.clear("students_light")
+
     # Mark session as finalized
     await db.attendance_sessions.update_one(
         {"id": session_id},
@@ -1651,15 +1769,15 @@ async def get_student_attendance_history(student_id: str):
     """Get all attendance records for a specific student with session dates"""
     records = await db.attendance_records.find({"student_id": student_id}, {"_id": 0}).to_list(1000)
     
-    # Enrich with session dates
-    enriched_records = []
+    # Enrich with session dates (single query for all sessions)
+    session_ids = list({r["session_id"] for r in records})
+    sessions = await db.attendance_sessions.find({"id": {"$in": session_ids}}, {"_id": 0, "id": 1, "date": 1}).to_list(len(session_ids) or 1)
+    date_map = {s["id"]: s.get("date") for s in sessions}
     for r in records:
-        session = await db.attendance_sessions.find_one({"id": r["session_id"]}, {"date": 1, "_id": 0})
-        if session:
-            r["date"] = session.get("date")
-        enriched_records.append(r)
-        
-    return sorted(enriched_records, key=lambda x: x.get("date", ""), reverse=True)
+        if r["session_id"] in date_map:
+            r["date"] = date_map[r["session_id"]]
+
+    return sorted(records, key=lambda x: x.get("date") or "", reverse=True)
 
 # ==================== Qudurat Endpoints ====================
 
@@ -1858,76 +1976,22 @@ async def edit_qudurat_review(submission_id: str, review: QuduratReview):
         
     return {"success": True}
 
-# ==================== Teams Management ====================
-
-class TeamPlayer(BaseModel):
-    student_id: str
-    name: str
-    x: float
-    y: float
-    image_url: Optional[str] = None
-
-class TeamUpdate(BaseModel):
-    name: str
-    group_photo: str = ""
-    lineup: List[TeamPlayer] = []
-
-@api_router.get("/teams")
-async def get_all_teams():
-    teams = await db.teams.find({}, {"_id": 0}).to_list(100)
-    # Enrich lineup players with their current image_url from students collection
-    for team in teams:
-        if team.get("lineup"):
-            student_ids = [p.get("student_id") for p in team["lineup"] if p.get("student_id")]
-            if student_ids:
-                students = await db.students.find({"id": {"$in": student_ids}}, {"_id": 0, "id": 1, "image_url": 1}).to_list(100)
-                img_map = {s["id"]: s.get("image_url") for s in students}
-                for player in team["lineup"]:
-                    if not player.get("image_url"):
-                        player["image_url"] = img_map.get(player.get("student_id"))
-    return teams
-
-@api_router.get("/teams/{group_name}")
-async def get_team(group_name: str):
-    team = await db.teams.find_one({"name": group_name}, {"_id": 0})
-    if team:
-        # Enrich lineup players with their current image_url from students collection
-        if team.get("lineup"):
-            student_ids = [p.get("student_id") for p in team["lineup"] if p.get("student_id")]
-            if student_ids:
-                students = await db.students.find({"id": {"$in": student_ids}}, {"_id": 0, "id": 1, "image_url": 1}).to_list(100)
-                img_map = {s["id"]: s.get("image_url") for s in students}
-                for player in team["lineup"]:
-                    if not player.get("image_url"):
-                        player["image_url"] = img_map.get(player.get("student_id"))
-        return team
-    return {"name": group_name, "group_photo": "", "lineup": []}
-
-@api_router.post("/teams")
-async def save_team(data: TeamUpdate):
-    doc = data.model_dump()
-    await db.teams.update_one({"name": data.name}, {"$set": doc}, upsert=True)
-    return {"success": True}
-
-@api_router.post("/teams/{group_name}/upload-photo")
-async def upload_team_photo(group_name: str, file: UploadFile = File(...)):
-    contents = await file.read()
-    b64 = base64.b64encode(contents).decode('utf-8')
-    mime = file.content_type or "image/png"
-    image_url = f"data:{mime};base64,{b64}"
-    
-    await db.teams.update_one(
-        {"name": group_name},
-        {"$set": {"group_photo": image_url}},
-        upsert=True
-    )
-    return {"image_url": image_url}
-
 # ==================== Books Endpoints ====================
 
 @api_router.get("/books")
 async def get_books():
-    books = await db.books.find({}, {"_id": 0, "file_url": 0}).to_list(1000)
+    pipeline = [
+        {"$addFields": {"cover_image": {"$cond": [
+            is_data_url_expr("cover_image"),
+            {"$concat": [
+                "/api/books/", {"$toString": "$id"},
+                "/cover?v=", {"$toString": {"$ifNull": ["$cover_version", 0]}},
+            ]},
+            "$cover_image",
+        ]}}},
+        {"$project": {"_id": 0, "file_url": 0}},
+    ]
+    books = await db.books.aggregate(pipeline).to_list(1000)
     for b in books:
         if isinstance(b.get("created_at"), str):
             b["created_at"] = datetime.fromisoformat(b["created_at"])
@@ -1976,16 +2040,21 @@ async def upload_book_file(book_id: str, file: UploadFile = File(...)):
 @api_router.post("/books/{book_id}/upload-cover")
 async def upload_book_cover(book_id: str, file: UploadFile = File(...)):
     content = await file.read()
-    base64_img = base64.b64encode(content).decode("utf-8")
-    img_data = f"data:{file.content_type};base64,{base64_img}"
-    
+    content, content_type = shrink_image(content, file.content_type, max_size=600)
+    version = int(time.time())
+
     result = await db.books.update_one(
         {"id": book_id},
-        {"$set": {"cover_image": img_data}}
+        {"$set": {"cover_image": to_data_url(content, content_type), "cover_version": version}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="الكتاب غير موجود")
-    return {"cover_image": img_data}
+    return {"cover_image": f"/api/books/{book_id}/cover?v={version}"}
+
+@api_router.get("/books/{book_id}/cover")
+async def get_book_cover(book_id: str, v: Optional[str] = None):
+    book = await db.books.find_one({"id": book_id}, {"cover_image": 1})
+    return data_url_response(book.get("cover_image") if book else None, versioned=v is not None)
 
 @api_router.post("/books/{book_id}/summary")
 async def submit_book_summary(book_id: str, data: BookSummaryCreate):

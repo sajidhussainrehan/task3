@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { getImageUrl } from "../lib/images";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
@@ -152,7 +153,7 @@ function ViewOnlyDashboard({ onLogout }) {
                       {index + 1}
                     </div>
                     {student.image_url ? (
-                      <img src={student.image_url} alt="" className="w-12 h-12 rounded-full object-cover" />
+                      <img src={getImageUrl(student.image_url)} alt="" className="w-12 h-12 rounded-full object-cover" />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center font-bold text-lg">
                         {student.name.charAt(0)}
@@ -374,7 +375,7 @@ function ViewOnlyDashboard({ onLogout }) {
               <div className="flex items-center gap-4 mb-6">
                 {selectedStudent.image_url ? (
                   <img 
-                    src={selectedStudent.image_url} 
+                    src={getImageUrl(selectedStudent.image_url)}
                     alt="" 
                     className="w-16 h-16 rounded-full object-cover border-4 border-blue-200" 
                   />

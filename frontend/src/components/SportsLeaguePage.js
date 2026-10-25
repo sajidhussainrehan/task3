@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getImageUrl } from "../lib/images";
 
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
-const getImageUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('data:') || url.startsWith('http')) return url;
-  return `${API_BASE}${url}`;
-};
 
 function SportsLeaguePage() {
   const [standings, setStandings] = useState([]);
@@ -40,7 +36,7 @@ function SportsLeaguePage() {
         const stdMap = {};
         (studentsRes.data || []).forEach(s => {
           const sid = s.id || s._id;
-          stdMap[sid] = { image: `${API}/students/${sid}/image`, points: s.points || 0, name: s.name };
+          stdMap[sid] = { image: s.image_url || null, points: s.points || 0, name: s.name };
         });
         setStudentMap(stdMap);
       } catch (err) {
@@ -54,7 +50,7 @@ function SportsLeaguePage() {
 
   const getTeamPhoto = (teamName) => {
     const team = teams.find(t => t.name === teamName);
-    return team?.group_photo || null;
+    return getImageUrl(team?.group_photo);
   };
 
   const getPlayerPosition = (y) => {
@@ -132,7 +128,7 @@ function SportsLeaguePage() {
           <div className="grid grid-cols-2 gap-4">
             {teams.map((team, index) => (
               <button key={index} onClick={() => setSelectedTeam(team)} className="bg-[#151a28] rounded-2xl p-3 border border-white/5 text-right w-full">
-                {team.group_photo ? <img src={team.group_photo} alt="" className="w-full h-24 object-cover rounded-xl mb-2" /> : <div className="w-full h-24 bg-[#1f2637] rounded-xl mb-2"></div>}
+                {team.group_photo ? <img src={getImageUrl(team.group_photo)} alt="" className="w-full h-24 object-cover rounded-xl mb-2" /> : <div className="w-full h-24 bg-[#1f2637] rounded-xl mb-2"></div>}
                 <h3 className="font-black text-xs text-center">{team.name}</h3>
               </button>
             ))}

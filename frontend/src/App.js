@@ -1,16 +1,18 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import Dashboard from "./components/DashboardNew";
-import StudentProfilePublic from "./components/StudentProfilePublic";
-import ChallengesManager from "./components/ChallengesManager";
-import ViewerPage from "./components/ViewerPage";
-import LoginPage from "./components/LoginPage";
-import ViewOnlyLogin from "./components/ViewOnlyLogin";
-import ViewOnlyDashboard from "./components/ViewOnlyDashboard";
-import TeacherLogin from "./components/TeacherLogin";
-import TeacherDashboard from "./components/TeacherDashboard";
+import { useState, lazy, Suspense } from "react";
 import GlobalLoader from "./components/GlobalLoader";
-import SportsLeaguePage from "./components/SportsLeaguePage";
+
+// Each page is loaded on demand so visitors only download the code they use
+const Dashboard = lazy(() => import("./components/DashboardNew"));
+const StudentProfilePublic = lazy(() => import("./components/StudentProfilePublic"));
+const ChallengesManager = lazy(() => import("./components/ChallengesManager"));
+const ViewerPage = lazy(() => import("./components/ViewerPage"));
+const LoginPage = lazy(() => import("./components/LoginPage"));
+const ViewOnlyLogin = lazy(() => import("./components/ViewOnlyLogin"));
+const ViewOnlyDashboard = lazy(() => import("./components/ViewOnlyDashboard"));
+const TeacherLogin = lazy(() => import("./components/TeacherLogin"));
+const TeacherDashboard = lazy(() => import("./components/TeacherDashboard"));
+const SportsLeaguePage = lazy(() => import("./components/SportsLeaguePage"));
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("ghiras_token"));
@@ -56,6 +58,7 @@ function App() {
   return (
     <BrowserRouter>
       <GlobalLoader />
+      <Suspense fallback={<div className="min-h-screen bg-white" />}>
       <Routes>
         <Route
           path="/"
@@ -90,6 +93,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to={token ? "/" : "/login"} />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
