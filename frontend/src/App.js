@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, Suspense, lazy } from "react";
-import GlobalLoader from "./components/GlobalLoader";
 
 const Dashboard = lazy(() => import("./components/DashboardNew"));
 const StudentProfilePublic = lazy(() => import("./components/StudentProfilePublic"));
@@ -15,13 +14,14 @@ const SportsLeaguePage = lazy(() => import("./components/SportsLeaguePage"));
 
 function RouteFallback() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: "50%",
-        border: "4px solid #bbf7d0", borderTopColor: "#16a34a",
-        animation: "spin 0.8s linear infinite"
-      }} />
-      <style>{"@keyframes spin { to { transform: rotate(360deg); } }"}</style>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4" dir="rtl">
+      <div className="relative scale-150 mb-8">
+        <div className="w-16 h-16 border-4 border-[#006d44]/20 border-t-[#006d44] rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center animate-pulse">
+          <span className="text-2xl">🌿</span>
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-[#006d44] tracking-tight">جاري تحميل البيانات...</h2>
     </div>
   );
 }
@@ -69,7 +69,6 @@ function App() {
 
   return (
     <BrowserRouter>
-      <GlobalLoader />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route
