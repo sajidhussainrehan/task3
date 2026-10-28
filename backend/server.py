@@ -658,7 +658,8 @@ async def reset_all_points():
 async def bulk_add_points(data: BulkPointsUpdate):
     """Add/deduct points for all students in a group. Must be defined before {student_id} routes."""
     import re
-    group_pattern = re.compile(f"^{re.escape(data.group.strip())}$", re.IGNORECASE)
+    # Some saved group names have stray spaces (e.g. "النخبة "), so ignore whitespace on both sides
+    group_pattern = re.compile(rf"^\s*{re.escape(data.group.strip())}\s*$", re.IGNORECASE)
     
     students = await db.students.find({"supervisor": group_pattern}, {"_id": 0, "id": 1}).to_list(1000)
 
@@ -947,7 +948,7 @@ async def get_groups():
 
 @api_router.post("/groups", response_model=Group)
 async def create_group(data: GroupCreate):
-    group = Group(name=data.name)
+    group = Group(name=data.name.strip())
     doc = group.model_dump()
     doc["created_at"] = datetime.now(timezone.utc).isoformat()
     await db.groups.insert_one(doc)
