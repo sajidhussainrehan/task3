@@ -6,6 +6,16 @@ import { getImageUrl } from "../lib/images";
 const API_BASE = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 const API = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
+// Matches without a date fall back to when they were created
+const matchTime = (m) => new Date(m.match_date || m.created_at || 0).getTime() || 0;
+
+const formatMatchDate = (value) => {
+  if (!value) return "لم يحدد الموعد بعد";
+  const date = new Date(value);
+  if (isNaN(date)) return value;
+  return date.toLocaleDateString("ar", { weekday: "long", day: "numeric", month: "long" });
+};
+
 function SportsLeaguePage() {
   const [standings, setStandings] = useState([]);
   const [results, setResults] = useState([]);
@@ -21,22 +31,22 @@ function SportsLeaguePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [standRes, matchRes, upcomingRes, teamRes, studentsRes] = await Promise.all([
+        const [standRes, matchRes, teamRes, studentsRes] = await Promise.all([
           axios.get(`${API}/league-standings`),
           axios.get(`${API}/matches`),
-          axios.get(`${API}/matches/upcoming`),
           axios.get(`${API}/teams`),
           axios.get(`${API}/students/light`)
         ]);
+        const allMatches = matchRes.data || [];
         setStandings(standRes.data || []);
-        setResults((matchRes.data || []).filter(m => m.status === "completed"));
-        setUpcomingMatches(upcomingRes.data || []);
+        setResults(allMatches.filter(m => m.status === "completed").sort((a, b) => matchTime(b) - matchTime(a)));
+        setUpcomingMatches(allMatches.filter(m => m.status !== "completed").sort((a, b) => matchTime(a) - matchTime(b)));
         setTeams(teamRes.data || []);
 
         const stdMap = {};
         (studentsRes.data || []).forEach(s => {
           const sid = s.id || s._id;
-          stdMap[sid] = { image: s.image_url || null, points: s.points || 0, name: s.name };
+          stdMap[sid] = { image: s.image_url || null, points: s.points || 0, name: s.name, supervisor: s.supervisor };
         });
         setStudentMap(stdMap);
       } catch (err) {
@@ -72,6 +82,54 @@ function SportsLeaguePage() {
     { label: "المهام", icon: "📋", path: lastStudentId ? `/public/${lastStudentId}#tasks` : "/login" },
   ];
 
+  const myTeam = studentMap[lastStudentId]?.supervisor;
+
+  const TeamBadge = ({ name, size = "w-10 h-10" }) => (
+    getTeamPhoto(name)
+      ? <img src={getTeamPhoto(name)} alt="" className={`${size} rounded-full object-cover border-2 border-white/10`} />
+      : <div className={`${size} rounded-full bg-[#1f2637] flex items-center justify-center`}>🛡️</div>
+  );
+
+  const MatchCard = ({ match }) => {
+    const done = match.status === "completed";
+    const s1 = match.score1 ?? 0;
+    const s2 = match.score2 ?? 0;
+    const isMine = myTeam && (match.team1 === myTeam || match.team2 === myTeam);
+    const nameClass = (score, other) => !done ? "text-white" : score > other ? "text-emerald-400" : score < other ? "text-gray-500" : "text-white";
+    let outcome = null;
+    if (done) outcome = s1 === s2 ? "تعادل" : `فوز ${s1 > s2 ? match.team1 : match.team2}`;
+    return (
+      <div className={`bg-[#151a28] rounded-2xl p-4 border ${isMine ? "border-[#00a86b]/60" : "border-white/5"}`}>
+        <div className="flex items-center justify-between text-xs text-gray-400 font-bold mb-3">
+          <span>📅 {formatMatchDate(match.match_date)}</span>
+          {isMine && <span className="text-[#00a86b]">⭐ مباراة فريقك</span>}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+            <TeamBadge name={match.team1} size="w-12 h-12" />
+            <p className={`font-black text-sm text-center truncate w-full ${nameClass(s1, s2)}`}>{match.team1}</p>
+          </div>
+          {done ? (
+            <div className="flex items-center gap-2 text-3xl font-black">
+              <span className={s1 > s2 ? "text-emerald-400" : "text-white"}>{s1}</span>
+              <span className="text-gray-600 text-xl">-</span>
+              <span className={s2 > s1 ? "text-emerald-400" : "text-white"}>{s2}</span>
+            </div>
+          ) : (
+            <div className="bg-[#00a86b]/15 text-[#00a86b] font-black text-sm px-4 py-2 rounded-full">VS</div>
+          )}
+          <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
+            <TeamBadge name={match.team2} size="w-12 h-12" />
+            <p className={`font-black text-sm text-center truncate w-full ${nameClass(s2, s1)}`}>{match.team2}</p>
+          </div>
+        </div>
+        {outcome && (
+          <p className={`text-center text-xs font-black mt-3 ${s1 === s2 ? "text-yellow-400" : "text-emerald-400"}`}>{outcome === "تعادل" ? "🤝 تعادل" : `🏆 ${outcome}`}</p>
+        )}
+      </div>
+    );
+  };
+
   if (loading) return <div className="min-h-screen bg-[#0a0f1e] text-white flex items-center justify-center font-black">جاري التحميل...</div>;
 
   return (
@@ -102,8 +160,13 @@ function SportsLeaguePage() {
       </div>
 
       <div className="flex gap-2 bg-[#1a1f2e]/50 p-1.5 rounded-2xl mb-8 border border-white/5 overflow-x-auto scroller-hidden">
-        {[{ id: "ranking", label: "الترتيب" }, { id: "upcoming", label: "المباريات" }, { id: "results", label: "النتائج" }, { id: "teams", label: "الفرق" }].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 min-w-[80px] py-3 rounded-xl font-black text-[10px] transition-all ${activeTab === tab.id ? "bg-[#00a86b] text-white shadow-xl scale-[1.02]" : "text-gray-500"}`}>
+        {[
+          { id: "ranking", label: "🏆 جدول الترتيب" },
+          { id: "upcoming", label: `📅 القادمة (${upcomingMatches.length})` },
+          { id: "results", label: `⚽ النتائج (${results.length})` },
+          { id: "teams", label: "👥 الفرق" }
+        ].map((tab) => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 min-w-[100px] py-3 px-2 rounded-xl font-black text-xs whitespace-nowrap transition-all ${activeTab === tab.id ? "bg-[#00a86b] text-white shadow-xl scale-[1.02]" : "text-gray-400"}`}>
             {tab.label}
           </button>
         ))}
@@ -111,27 +174,118 @@ function SportsLeaguePage() {
 
       <div className="space-y-4">
         {activeTab === "ranking" && (
-          <div className="grid grid-cols-1 gap-3">
-            {standings.map((team, index) => (
-              <div key={index} className="bg-[#151a28] rounded-2xl p-4 flex items-center justify-between border border-white/5">
-                <div className="flex items-center gap-4">
-                  <span className={`text-lg font-black italic ${index === 0 ? "text-yellow-400" : "text-gray-600"}`}>{index + 1}</span>
-                  {getTeamPhoto(team.team) ? <img src={getTeamPhoto(team.team)} alt="" className="w-10 h-10 rounded-lg object-cover" /> : <div className="w-10 h-10 bg-[#1f2637] rounded-lg"></div>}
-                  <p className="font-black text-sm">{team.team}</p>
+          <>
+            {/* Quick summary */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "مباريات لُعبت", value: results.length },
+                { label: "مباريات متبقية", value: upcomingMatches.length },
+                { label: "مجموع الأهداف", value: results.reduce((sum, m) => sum + (m.score1 || 0) + (m.score2 || 0), 0) }
+              ].map((item) => (
+                <div key={item.label} className="bg-[#151a28] rounded-2xl p-3 text-center border border-white/5">
+                  <p className="text-2xl font-black text-[#00a86b]">{item.value}</p>
+                  <p className="text-[11px] text-gray-400 font-bold mt-1">{item.label}</p>
                 </div>
+              ))}
+            </div>
+
+            {standings.length > 0 ? (
+              <div className="bg-[#151a28] rounded-2xl border border-white/5 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-gray-400 text-xs border-b border-white/10">
+                      <th className="p-3 text-center">#</th>
+                      <th className="p-3 text-right">الفريق</th>
+                      <th className="p-2 text-center">لعب</th>
+                      <th className="p-2 text-center text-emerald-400">فاز</th>
+                      <th className="p-2 text-center text-yellow-400">تعادل</th>
+                      <th className="p-2 text-center text-red-400">خسر</th>
+                      <th className="p-2 text-center">الأهداف</th>
+                      <th className="p-3 text-center text-white">النقاط</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((team, index) => {
+                      const isMine = team.team === myTeam;
+                      return (
+                        <tr key={team.team} className={`border-b border-white/5 last:border-0 ${isMine ? "bg-[#00a86b]/15" : index === 0 ? "bg-yellow-400/5" : ""}`}>
+                          <td className="p-3 text-center font-black">
+                            {index < 3 ? ["🥇", "🥈", "🥉"][index] : <span className="text-gray-500">{index + 1}</span>}
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2 min-w-[110px]">
+                              <TeamBadge name={team.team} size="w-8 h-8" />
+                              <div>
+                                <p className="font-black leading-tight">{team.team}</p>
+                                {isMine && <p className="text-[10px] text-[#00a86b] font-bold">فريقك</p>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-2 text-center text-gray-300 font-bold">{team.played || 0}</td>
+                          <td className="p-2 text-center text-emerald-400 font-black">{team.wins || 0}</td>
+                          <td className="p-2 text-center text-yellow-400 font-black">{team.draws || 0}</td>
+                          <td className="p-2 text-center text-red-400 font-black">{team.losses || 0}</td>
+                          <td className="p-2 text-center text-gray-300 font-bold whitespace-nowrap" dir="ltr">{team.gf || 0} : {team.ga || 0}</td>
+                          <td className="p-3 text-center">
+                            <span className="inline-block min-w-[2.25rem] bg-[#00a86b] text-white font-black rounded-lg px-2 py-1">{team.points ?? ((team.wins || 0) * 3 + (team.draws || 0))}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="bg-[#151a28] rounded-2xl p-10 text-center text-gray-400 font-bold border border-white/5">لم تبدأ مباريات الدوري بعد</div>
+            )}
+
+            {/* How the table works */}
+            <div className="bg-[#151a28] rounded-2xl p-4 border border-white/5 text-xs text-gray-300 font-bold space-y-2">
+              <p className="text-white font-black text-sm">📖 كيف يُحسب الترتيب؟</p>
+              <p>🟢 الفوز = <span className="text-emerald-400">3 نقاط</span> &nbsp;•&nbsp; 🟡 التعادل = <span className="text-yellow-400">نقطة واحدة</span> &nbsp;•&nbsp; 🔴 الخسارة = <span className="text-red-400">0</span></p>
+              <p>⚽ الأهداف: الأهداف التي سجلها الفريق : الأهداف التي دخلت مرماه</p>
+              <p>🏅 عند تساوي النقاط يتقدم الفريق صاحب فارق الأهداف الأكبر</p>
+            </div>
+          </>
+        )}
+
+        {activeTab === "upcoming" && (
+          upcomingMatches.length > 0
+            ? upcomingMatches.map(m => <MatchCard key={m.id} match={m} />)
+            : <div className="bg-[#151a28] rounded-2xl p-10 text-center text-gray-400 font-bold border border-white/5">لا توجد مباريات قادمة حالياً</div>
+        )}
+
+        {activeTab === "results" && (
+          results.length > 0
+            ? results.map(m => <MatchCard key={m.id} match={m} />)
+            : <div className="bg-[#151a28] rounded-2xl p-10 text-center text-gray-400 font-bold border border-white/5">لم تُلعب أي مباراة بعد</div>
         )}
 
         {activeTab === "teams" && (
           <div className="grid grid-cols-2 gap-4">
-            {teams.map((team, index) => (
-              <button key={index} onClick={() => setSelectedTeam(team)} className="bg-[#151a28] rounded-2xl p-3 border border-white/5 text-right w-full">
-                {team.group_photo ? <img src={getImageUrl(team.group_photo)} alt="" className="w-full h-24 object-cover rounded-xl mb-2" /> : <div className="w-full h-24 bg-[#1f2637] rounded-xl mb-2"></div>}
-                <h3 className="font-black text-xs text-center">{team.name}</h3>
-              </button>
-            ))}
+            {teams.map((team, index) => {
+              const rank = standings.findIndex(s => s.team === team.name);
+              const record = standings[rank];
+              return (
+                <button key={index} onClick={() => setSelectedTeam(team)} className={`bg-[#151a28] rounded-2xl p-3 border text-right w-full ${team.name === myTeam ? "border-[#00a86b]/60" : "border-white/5"}`}>
+                  {team.group_photo ? <img src={getImageUrl(team.group_photo)} alt="" className="w-full h-24 object-cover rounded-xl mb-2" /> : <div className="w-full h-24 bg-[#1f2637] rounded-xl mb-2"></div>}
+                  <h3 className="font-black text-sm text-center">{team.name}</h3>
+                  {record && (
+                    <div className="mt-2 text-center text-[11px] font-bold space-y-1">
+                      <p className="text-gray-400">المركز {rank + 1} • <span className="text-white">{record.points ?? 0} نقطة</span></p>
+                      <p>
+                        <span className="text-emerald-400">{record.wins || 0} فوز</span>
+                        <span className="text-gray-600"> • </span>
+                        <span className="text-yellow-400">{record.draws || 0} تعادل</span>
+                        <span className="text-gray-600"> • </span>
+                        <span className="text-red-400">{record.losses || 0} خسارة</span>
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-[#00a86b] font-bold text-center mt-2">اضغط لعرض التشكيلة</p>
+                </button>
+              );
+            })}
 
             {selectedTeam && (
               <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={() => setSelectedTeam(null)}>

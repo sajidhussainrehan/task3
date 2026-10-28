@@ -1250,20 +1250,25 @@ async def get_league_standings():
     cached = cache.get("standings")
     if cached is not None:
         return cached
-    matches = await db.matches.find({"status": "completed"}, {"_id": 0}).to_list(1000)
+    matches = await db.matches.find({}, {"_id": 0, "team1": 1, "team2": 1, "score1": 1, "score2": 1, "status": 1}).to_list(1000)
     standings = {}
-    
+
     for match in matches:
         team1 = match["team1"]
         team2 = match["team2"]
-        score1 = match.get("score1", 0)
-        score2 = match.get("score2", 0)
-        
-        if team1 not in standings:
-            standings[team1] = {"wins": 0, "losses": 0, "draws": 0}
-        if team2 not in standings:
-            standings[team2] = {"wins": 0, "losses": 0, "draws": 0}
-        
+        # Teams with only scheduled matches still appear in the table with zeros
+        for team in (team1, team2):
+            standings.setdefault(team, {"wins": 0, "losses": 0, "draws": 0, "gf": 0, "ga": 0})
+        if match.get("status") != "completed":
+            continue
+
+        score1 = match.get("score1") or 0
+        score2 = match.get("score2") or 0
+        standings[team1]["gf"] += score1
+        standings[team1]["ga"] += score2
+        standings[team2]["gf"] += score2
+        standings[team2]["ga"] += score1
+
         if score1 > score2:
             standings[team1]["wins"] += 1
             standings[team2]["losses"] += 1
@@ -1273,18 +1278,17 @@ async def get_league_standings():
         else:
             standings[team1]["draws"] += 1
             standings[team2]["draws"] += 1
-    
+
     # Convert to list of objects with team property
     result = []
     for team_name, stats in standings.items():
         stats["team"] = team_name
-        stats["played"] = stats.get("wins", 0) + stats.get("draws", 0) + stats.get("losses", 0)
-        stats["gf"] = 0  # Goals for - would need match data
-        stats["ga"] = 0  # Goals against - would need match data
-        stats["gd"] = 0  # Goal difference
+        stats["played"] = stats["wins"] + stats["draws"] + stats["losses"]
+        stats["gd"] = stats["gf"] - stats["ga"]
+        stats["points"] = stats["wins"] * 3 + stats["draws"]
         result.append(stats)
-    
-    result = sorted(result, key=lambda x: (x["wins"], x["draws"]), reverse=True)
+
+    result = sorted(result, key=lambda x: (x["points"], x["gd"], x["gf"]), reverse=True)
     cache.set("standings", result)
     return result
 
